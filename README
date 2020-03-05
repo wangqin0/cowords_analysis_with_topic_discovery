@@ -1,0 +1,44 @@
+停用词来源
+https://github.com/goto456/stopwords
+
+# data structures
+
+## WordNet
+
+* nodes
+* edges
+* docs
+
+### WordNode
+
+* name
+* word_count
+* doc_count
+* term_frequency*
+* inverse_document_frequency
+
+### Edge
+
+dict (look up a node) of dict (look up a neighbor)
+
+### Doc
+
+* doc_id
+* word_count_in_doc
+* word_tf
+* word_tf_idf
+* len
+
+
+
+# 思路
+
+## 删词
+
+* 单字词
+* 单篇文档 tfidf 低于阈值 （docs遍历）
+
+## 节点权重
+
+* 词频(word_count)
+
