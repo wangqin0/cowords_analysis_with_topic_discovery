@@ -2,9 +2,9 @@ import jieba
 from jieba import posseg
 import re
 import pandas as pd
-from dumpObj import *
 import math
 import time
+import pickle
 from gensim import corpora, models
 
 
@@ -294,7 +294,7 @@ def fresh_run():
     # for token_grouped_by_doc in word_net.nodes.keys():
     #     print(word_net.nodes[token_grouped_by_doc])
     word_net.describe()
-    save_obj(word_net, 'word_with_property_net')
+    save_obj(word_net, 'wordnet')
 
 
 def run_from_token_list():
@@ -423,3 +423,13 @@ def extract_tokens(word_net, minimal_doc_count):
         if word_net.nodes[word].doc_count >= minimal_doc_count:
             selected_tokens.add(word)
     save_obj(selected_tokens, 'selected_tokens')
+
+
+def save_obj(obj, name):
+    with open('objects/' + name + '.pkl', 'wb') as f:
+        pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
+
+
+def load_obj(name):
+    with open('objects/' + name + '.pkl', 'rb') as f:
+        return pickle.load(f)

@@ -1,4 +1,4 @@
-from dumpObj import *
+from tools.dumpObj import *
 from sklearn.decomposition import LatentDirichletAllocation
 from sklearn.feature_extraction.text import CountVectorizer
 import pprint

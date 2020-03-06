@@ -1,5 +1,4 @@
-from dumpObj import *
-import WordNet
+from tools.dumpObj import *
 
 
 def main():

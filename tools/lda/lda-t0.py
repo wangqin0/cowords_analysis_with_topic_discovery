@@ -1,7 +1,4 @@
-from time import time
-from dumpObj import *
-from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
-from sklearn.decomposition import NMF, LatentDirichletAllocation
+from tools.dumpObj import *
 import pprint
 
 data_samples = load_obj('separate-docs')

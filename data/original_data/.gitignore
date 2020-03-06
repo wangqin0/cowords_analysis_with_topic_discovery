@@ -2,3 +2,4 @@
 *
 # Except this file
 !.gitignore
+!tianya_posts_test_set_100.txt
