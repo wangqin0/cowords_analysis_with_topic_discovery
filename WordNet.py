@@ -174,7 +174,7 @@ def data_to_post(filename, if_output_docs=False):
     # print("[reading csv data] completed")
 
     # txt
-    post_data_df = pd.read_csv(filename, sep="\n", header=None, error_bad_lines=False)
+    post_data_df = pd.read_csv(filename, sep="\n", header=None, error_bad_lines=False, encoding='utf-8')
     # print(post_data_df)
 
     combined_docs = ''
@@ -193,10 +193,10 @@ def data_to_post(filename, if_output_docs=False):
     # save docs on request
     if if_output_docs:
         save_obj(separate_docs, 'separate_docs')
-        file = open('doc/combined_doc.txt', 'w')
+        file = open('doc/combined_doc.txt', 'w', encoding='utf-8')
         file.write(str(combined_docs))
         file.close()
-        file = open('doc/separate_doc.txt', 'w')
+        file = open('doc/separate_doc.txt', 'w', encoding='utf-8')
         for token in separate_docs:
             file.write(str(token))
             file.write('\n')
@@ -279,7 +279,7 @@ def word_process(curr_post, token_list, stop_words, selected_flags):
 
 
 def update_stop_words_list(file_name, stop_words_list):
-    stop_words_in_file = [line.rstrip('\n') for line in open(file_name)]
+    stop_words_in_file = [line.rstrip('\n') for line in open(file_name, encoding='utf-8')]
     for stop_word in stop_words_in_file:
         if stop_word not in stop_words_list:
             stop_words_list.append(stop_word)
@@ -287,7 +287,7 @@ def update_stop_words_list(file_name, stop_words_list):
 
 def fresh_run():
     # Read posts from a spread sheet
-    docs = data_to_post('data/original_data/tianya_posts_test_set_1000.txt', if_output_docs=False)
+    docs = data_to_post('data/original_data/tianya_posts_test_set_100.txt', if_output_docs=False)
     token_list = post_to_token(docs, if_output_tokens=True)
     word_net = WordNet()
     word_net.add_corpus(token_list)
@@ -353,7 +353,7 @@ def add_node_index(word_net):
 
 
 def generate_graph_json_data(word_net):
-    node_info_f = open('files/node_info.json', 'w+')
+    node_info_f = open('files/node_info.json', 'w+', encoding='utf-8')
     node_info_f.write('{\n"nodes": [\n')
     for node in word_net.nodes:
         node_info_f.write(str(word_net.nodes[node].term_frequency) + ', '
@@ -363,7 +363,7 @@ def generate_graph_json_data(word_net):
                           + str(word_net.nodes[node].word_count) + '\n')
     node_info_f.close()
 
-    edge_info_f = open('files/edge_info.csv', 'w+')
+    edge_info_f = open('files/edge_info.csv', 'w+', encoding='utf-8')
     edge_info_f.write('')
     for start_edge in word_net.edges.keys():
         for end_edge in word_net.edges[start_edge].keys():
@@ -373,7 +373,7 @@ def generate_graph_json_data(word_net):
 
 
 def generate_graph_csv_data(word_net):
-    node_info_f = open('files/node_info.csv', 'w+')
+    node_info_f = open('files/node_info.csv', 'w+', encoding='utf-8')
     node_info_f.write('Id, word_with_property, inverse_document_frequency, doc_count, word_count\n')
     for node in word_net.nodes:
         node_info_f.write(str(word_net.nodes[node].term_frequency) + ', '
@@ -383,7 +383,7 @@ def generate_graph_csv_data(word_net):
                           + str(word_net.nodes[node].word_count) + '\n')
     node_info_f.close()
 
-    edge_info_f = open('files/edge_info.csv', 'w+')
+    edge_info_f = open('files/edge_info.csv', 'w+', encoding='utf-8')
     edge_info_f.write('Source, Target, weight\n')
     for start_edge in word_net.edges.keys():
         for end_edge in word_net.edges[start_edge].keys():
@@ -396,18 +396,18 @@ def extract_top_words(word_net):
     tf_idf_extraction = word_net.extract_top_percent_words_by_tf_idf()
     tf_extraction = word_net.extract_top_percent_words_by_tf()
 
-    f_tf = open('files/top_10%_words_by_tf.csv', 'w+')
+    f_tf = open('files/top_10%_words_by_tf.csv', 'w+', encoding='utf-8')
     for i in tf_extraction:
         f_tf.write(i + '\n')
 
-    f_tf_idf = open('files/top_10%_words_by_tf_idf.csv', 'w+')
+    f_tf_idf = open('files/top_10%_words_by_tf_idf.csv', 'w+', encoding='utf-8')
     for i in tf_idf_extraction:
         f_tf_idf.write(i + '\n')
 
 
 def extract_tokens_batch(word_net):
     for i in range(20):
-        f = open('token_reduction_by_doc_count/tokens_docCount_more_than_' + str(i + 1) + '.csv', 'w+')
+        f = open('token_reduction_by_doc_count/tokens_docCount_more_than_' + str(i + 1) + '.csv', 'w+', encoding='utf-8')
         f.write('word_with_property, doc_count, word_count, inverse_document_frequency\n')
         for word in word_net.nodes.keys():
             if word_net.nodes[word].doc_count > i:
