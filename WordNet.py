@@ -257,9 +257,7 @@ def keep_only_chinese(curr_word):
 
 
 def word_process_selected(curr_post, token_list, stop_words, selected_flags, selected_tokens):
-    seg_counter = 0
     for word in jieba.posseg.dt.cut(curr_post):
-        seg_counter += 1
         word_0, flag = str(word).split('/')
         # if current word_with_property is not a stop word_with_property and its word_with_property class is selected,
         # append it to the token_list of current doc
@@ -268,9 +266,7 @@ def word_process_selected(curr_post, token_list, stop_words, selected_flags, sel
 
 
 def word_process(curr_post, token_list, stop_words, selected_flags):
-    seg_counter = 0
     for word in jieba.posseg.dt.cut(curr_post):
-        seg_counter += 1
         word_0, flag = str(word).split('/')
         # if current word_with_property is not a stop word_with_property and its word_with_property class is selected,
         # append it to the token_list of current doc
