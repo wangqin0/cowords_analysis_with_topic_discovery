@@ -336,7 +336,7 @@ def main():
     print("saving wordnet obj...")
     save_obj(word_net, 'word_with_property_net')
 
-    # extract_tokens(word_net)
+    # extract_tokens_by_doc_frequency(word_net)
     # tf_idf_extraction = load_obj('tf_idf_top_30%_extraction')
     # tf_extraction = load_obj('tf_top_30%_extraction')
     # print(len(tf_idf_extraction))
@@ -417,7 +417,7 @@ def extract_tokens_batch(word_net):
                         + str(word_net.nodes[word].inverse_document_frequency) + '\n')
 
 
-def extract_tokens(word_net, minimal_doc_count):
+def extract_tokens_by_doc_frequency(word_net, minimal_doc_count):
     selected_tokens = set()
     for word in word_net.nodes.keys():
         if word_net.nodes[word].doc_count >= minimal_doc_count:
