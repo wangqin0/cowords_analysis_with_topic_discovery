@@ -137,10 +137,10 @@ class WordNode:
         self.inverse_document_frequency = inverse_document_frequency
 
     def __str__(self):
-        return 'info of node "' + str(self.name) \
-               + '"\n\tword_count: ' + str(self.word_count) \
+        return 'info of node "'  + str(self.node_id) \
+               + '\n\tnode_name' + str(self.name) \
                + '\n\tdoc_count: ' + str(self.doc_count) \
-               + '\n\tid(*): ' + str(self.id) \
+               + '"\n\tword_count: ' + str(self.word_count) \
                + '\n\tinverse_document_frequency: ' + str(self.inverse_document_frequency)
 
 
