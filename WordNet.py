@@ -86,13 +86,13 @@ class WordNet:
         :return: void
         """
         print("[Summary of the WordNet]")
-        print('len of word_net.nodes: ' + str(len(self.nodes)))
+        print('number_of_words of word_net.nodes: ' + str(len(self.nodes)))
         edge_counter = 0
         for node in self.edges.keys():
             for neighbor in self.edges[node]:
                 edge_counter += len(neighbor)
-        print('len of word_net.edges: ' + str(edge_counter))
-        print('len of word_net.docs: ' + str(len(self.docs)))
+        print('number_of_words of word_net.edges: ' + str(edge_counter))
+        print('number_of_words of word_net.docs: ' + str(len(self.docs)))
 
     def extract_top_percent_words_by_tf_idf(self, extract_range=0.1):
         extracted_words_by_tf_idf = []
@@ -160,7 +160,7 @@ class Doc:
             self.word_tf[word] = word_freq[word]/self.len
 
     def __str__(self):
-        return 'info of doc ' + self.id + '\n\tlen: ' + self.len
+        return 'info of doc ' + self.id + '\n\tnumber_of_words: ' + self.len
 
 
 def data_to_post(filename, if_output_docs=False):
@@ -238,10 +238,10 @@ def post_to_token(doc_list, if_output_tokens=False):
         if count % 1000 == 0:
             print("[generate tokens] progress: " + str(count) + "\t / " + str(doc_list_len))
     print("[generate tokens] completed")
-    # pprint.pprint(token_list)
+    # pprint.pprint(coded_corpus)
 
     if if_output_tokens:
-        save_obj(token_list, "token_list")
+        save_obj(token_list, "coded_corpus")
         print("[output tokens] completed")
 
     print("[post_to_token] summary")
@@ -260,7 +260,7 @@ def word_process_selected(curr_post, token_list, stop_words, selected_flags, sel
     for word in jieba.posseg.dt.cut(curr_post):
         word_0, flag = str(word).split('/')
         # if current word_with_property is not a stop word_with_property and its word_with_property class is selected,
-        # append it to the token_list of current doc
+        # append it to the coded_corpus of current doc
         if word_0 not in stop_words and word_0 in selected_tokens and flag in selected_flags and len(word_0) > 1:
             token_list.append(word_0)
 
@@ -269,7 +269,7 @@ def word_process(curr_post, token_list, stop_words, selected_flags):
     for word in jieba.posseg.dt.cut(curr_post):
         word_0, flag = str(word).split('/')
         # if current word_with_property is not a stop word_with_property and its word_with_property class is selected,
-        # append it to the token_list of current doc
+        # append it to the coded_corpus of current doc
         if word_0 not in stop_words and flag in selected_flags and len(word_0) > 1:
             token_list.append(word_0)
 
@@ -294,7 +294,7 @@ def fresh_run():
 
 
 def run_from_token_list():
-    token_list = load_obj('token_list')
+    token_list = load_obj('coded_corpus')
     word_net = WordNet()
     word_net.add_corpus(token_list)
     # for token_grouped_by_doc in word_net.nodes.keys():
@@ -305,7 +305,7 @@ def run_from_token_list():
 
 def lda():
     corpus = []
-    token_list = load_obj('token_list')
+    token_list = load_obj('coded_corpus')
     stopwords_list = load_obj('stop_words')
     # 构造词典
     dictionary = corpora.Dictionary(token_list)
@@ -335,8 +335,8 @@ def main():
     # extract_tokens_by_doc_frequency(word_net)
     # tf_idf_extraction = load_obj('tf_idf_top_30%_extraction')
     # tf_extraction = load_obj('tf_top_30%_extraction')
-    # print(len(tf_idf_extraction))
-    # print(len(tf_extraction))
+    # print(number_of_words(tf_idf_extraction))
+    # print(number_of_words(tf_extraction))
     # extract_top_words(word_net)
     print()
 
