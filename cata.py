@@ -1,13 +1,11 @@
+import math
+import os
+import pickle
+import re
+import sys
+
 import jieba
 from jieba import posseg
-import re
-import csv
-import math
-import time
-import pickle
-from gensim import corpora, models
-import os
-import sys
 
 
 def count_word_in_doc(list_of_words):
@@ -32,14 +30,33 @@ class WordNet:
         output numbers of valid words, edges, and docs
         :return: void
         """
-        print("[Summary of the WordNet]")
-        print('number of word_net.docs: ' + str(len(self.docs)))
-        print('number of word_net.nodes: ' + str(len(self.nodes)))
-        edge_counter = 0
-        for node in self.edges.keys():
-            for neighbor in self.edges[node]:
-                edge_counter += len(neighbor)
-        print('number of word_net.edges: ' + str(edge_counter))
+        num_of_edges = 0
+        for word_id in self.edges.keys():
+            num_of_edges += len(self.edges[word_id])
+        return '[word_net info]\n' \
+               '\tnumber of word_net.docs: {}\n\tnumber of word_net.nodes: {}\n\tnumber of word_net.edges: {}'\
+            .format(len(self.docs), len(self.nodes), num_of_edges)
+
+    def describe_docs(self):
+        docs_info = '[docs info]'
+        for doc in self.docs:
+            docs_info += doc.describe(self)
+        return docs_info
+
+    def describe_nodes(self):
+        nodes_info = '[nodes info]\n'
+        for node in self.nodes:
+            nodes_info += str(node) + '\n'
+        return nodes_info
+
+    def describe_edges(self):
+        edge_info = '[edge info]'
+        for word_id in self.edges.keys():
+            for neighbor_id in self.edges[word_id]:
+                edge_info += '\t{:8}'.format(self.word_id_to_word(word_id)) \
+                               + '-> {:8}'.format(self.word_id_to_word(neighbor_id)) \
+                               + '  {}'.format(self.edges[word_id][neighbor_id]) + '\n'
+        return edge_info
 
     def add_cut_corpus(self, coded_corpus):
         """
@@ -69,20 +86,20 @@ class WordNet:
 
             index += 1
             if index % 100 == 0:
-                display_progress('add cut corpus', index/num_of_docs)
+                display_progress('add cut corpus', index / num_of_docs)
 
         for node in self.nodes:
-            node.inverse_document_frequency = math.log(num_of_docs/node.doc_count + 1)
+            node.inverse_document_frequency = math.log(num_of_docs / node.doc_count + 1)
 
         for doc in self.docs:
             for word_id in doc.word_id_count_in_doc.keys():
-                doc.word_id_tf[word_id] = doc.word_id_count_in_doc[word_id]/doc.number_of_words
+                doc.word_id_tf[word_id] = doc.word_id_count_in_doc[word_id] / doc.number_of_words
                 doc.word_id_tf_idf[word_id] = doc.word_id_tf[word_id] * self.nodes[word_id].inverse_document_frequency
 
     def word_to_id(self, word):
         return self.get_node_by_str[word].node_id
 
-    def node_id_to_word(self, node_id):
+    def word_id_to_word(self, node_id):
         return self.nodes[node_id].word
 
     def generate_nodes_hash_and_edge(self, cut_corpus):
@@ -100,7 +117,7 @@ class WordNet:
         index = 0
 
         for unique_word in word_set:
-            new_node = WordNode(word=unique_word, node_id=index)
+            new_node = WordNode(node_id=index, word=unique_word)
             self.nodes.append(new_node)
             self.get_node_by_str[unique_word] = new_node
 
@@ -108,7 +125,7 @@ class WordNet:
 
             index += 1
             if index % 1000 == 0:
-                display_progress('generate_nodes_hash', index/num_of_nodes)
+                display_progress('generate_nodes_hash', index / num_of_nodes)
 
         coded_corpus = []
         for doc in cut_corpus:
@@ -118,30 +135,50 @@ class WordNet:
             coded_corpus.append(id_doc)
         return coded_corpus
 
+    def export(self, dest_dir=os.path.join('output', 'exported'), optional_postfix=''):
+        if len(optional_postfix) != 0:
+            optional_postfix = '_' + optional_postfix
+        with open(os.path.join(dest_dir, 'data_structure', optional_postfix, '.txt'),
+                  'w+', encoding='utf-8') as output_file:
+            output_file.write('# word_net.docs')
+            for doc in self.docs:
+                pass
+
 
 class Doc:
     def __init__(self, doc_id, word_id_count_in_doc, number_of_words):
-        self.id = doc_id
+        self.doc_id = doc_id
         self.number_of_words = number_of_words
         self.word_id_count_in_doc = word_id_count_in_doc
         self.word_id_tf = {}
         self.word_id_tf_idf = {}
 
+    def __str__(self):
+        return '\n[Doc info]\ndoc_id: {0}\tnumber_of_words: {1}'.format(self.doc_id, self.number_of_words)
+        pass
+
+    def describe(self, word_net):
+        doc_info = '\n[Doc info] doc_id: {0}\tnumber_of_words: {1}\n\tword_id_count_in_doc:\n' \
+                   '\t\t count |   tf   | tf_idf |  word ' \
+            .format(self.doc_id, self.number_of_words)
+        for word_id in self.word_id_count_in_doc.keys():
+            doc_info += '\n\t\t  {0:>2}     {1:2.4f}   {2:2.4f}    {3:<4}' \
+                            .format(self.word_id_count_in_doc[word_id], self.word_id_tf[word_id],
+                                    self.word_id_tf_idf[word_id], word_net.nodes[word_id].word)
+        return doc_info
+
 
 class WordNode:
-    def __init__(self, word, node_id=-1, word_count=0, doc_count=0, inverse_document_frequency=-1):
-        self.name = word
+    def __init__(self, node_id, word, doc_count=0, word_count=0, inverse_document_frequency=-1):
         self.node_id = node_id
-        self.word_count = word_count
+        self.word = word
         self.doc_count = doc_count
+        self.word_count = word_count
         self.inverse_document_frequency = inverse_document_frequency
 
     def __str__(self):
-        return 'info of node "'  + str(self.node_id) \
-               + '\n\tnode_name' + str(self.name) \
-               + '\n\tdoc_count: ' + str(self.doc_count) \
-               + '"\n\tword_count: ' + str(self.word_count) \
-               + '\n\tinverse_document_frequency: ' + str(self.inverse_document_frequency)
+        return '[node info] id: {:8} doc_count: {:5}  word_count: {:8}  inverse_document_frequency: {:3.5}  word: {}'\
+                   .format(self.node_id, self.doc_count, self.word_count, self.inverse_document_frequency, self.word)
 
 
 def word_cut(list_of_docs, stop_words_set, selected_part_of_speech=None, if_output_tokens=False):
@@ -177,7 +214,7 @@ def word_cut(list_of_docs, stop_words_set, selected_part_of_speech=None, if_outp
 
         index += 1
         if index % 100 == 0:
-            display_progress('word cut', index/num_of_docs)
+            display_progress('word cut', index / num_of_docs)
 
     if if_output_tokens:
         save_obj(corpus_after_cut, 'list_of_docs')
