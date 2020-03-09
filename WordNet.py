@@ -145,7 +145,7 @@ class WordNode:
         return 'info of node "' + str(self.name) \
                + '"\n\tword_count: ' + str(self.word_count) \
                + '\n\tdoc_count: ' + str(self.doc_count) \
-               + '\n\tid(*): ' + str(self.id) \
+               + '\n\tdoc_id(*): ' + str(self.id) \
                + '\n\tinverse_document_frequency: ' + str(self.inverse_document_frequency)
 
 
