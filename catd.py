@@ -4,6 +4,7 @@ import pickle
 import re
 import sys
 from wordcloud import WordCloud
+from gensim import corpora, models
 import jieba
 from jieba import posseg
 
@@ -104,6 +105,12 @@ class WordNet:
                     word_list.append(self.word_id_to_word(word_id))
             corpus.append(word_list)
         return corpus
+
+    def extract_topics(self):
+        corpus = self.get_cut_corpus()
+        corpora
+
+        pass
 
     def output_top_percent_words_by_tf_idf_in_each_doc(self, percent):
         extracted_words_id_set = set()
