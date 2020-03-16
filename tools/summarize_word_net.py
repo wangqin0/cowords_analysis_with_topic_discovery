@@ -3,7 +3,7 @@ import os
 
 word_net_filename = 'word_net_with_selection'
 
-word_net = catd.load_obj(word_net_filename)
+word_net = catd.util.load_obj(word_net_filename)
 
 with open(os.path.join('output', 'description', word_net_filename + '.txt'), 'w+', encoding='utf-8') as output_file:
     output_file.write(word_net.description())
