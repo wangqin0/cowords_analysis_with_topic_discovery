@@ -4,7 +4,7 @@ import catd
 import os
 
 corpus = []
-with open(os.path.join('data', 'original_data', 'tianya_posts_test_set_100.txt'), encoding='utf-8') as f:
+with open(os.path.join('data', 'original_data', 'tianya_posts_test_set_10.txt'), encoding='utf-8') as f:
     for line in f:
         corpus.append(line)
 
@@ -15,5 +15,5 @@ cut_corpus = catd.util.word_cut(corpus, stop_words_set)
 word_net = catd.WordNet()
 coded_corpus = word_net.generate_nodes_hash_and_edge(cut_corpus)
 word_net.add_cut_corpus(coded_corpus)
+word_net.output_d3_force_graph_json()
 catd.util.save_obj(word_net, 'word_net')
-print()

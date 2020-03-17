@@ -18,7 +18,7 @@ n_top_words = 20
 # word_net = catd.load_obj('reduced_tianya_posts_test_set_1000')
 # data_samples = word_net.get_cut_corpus()
 
-with open('data/original_data/tianya_posts_test_set_100.txt', 'r', encoding='utf-8') as f:
+with open('../data/original_data/tianya_posts_test_set_100.txt', 'r', encoding='utf-8') as f:
     data_samples = []
     for line in f:
         data_samples.append(line)

@@ -6,7 +6,7 @@ Please set wording dir to project root.
 
 ## data structure
 
-'''
+```
 * WordNet
     * nodes   list[WordNode1, WordNode2, ...])
     * edges   dict[word][neighbors] -> weight)
@@ -26,7 +26,7 @@ Please set wording dir to project root.
     * word_tf_in_doc
     * word_tf_idf
     * num_of_words
-'''
+```
 
 ## 停用词来源
 
