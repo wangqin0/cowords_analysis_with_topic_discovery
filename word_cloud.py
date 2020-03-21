@@ -4,7 +4,7 @@ import catd
 import matplotlib.pyplot as plt
 import pandas as pd
 
-word_net = catd.load_obj('reduced_tianya_posts_test_set_1000')
+word_net = catd.util.load_obj('reduced_tianya_posts_test_set_1000')
 
 corpus = word_net.get_cut_corpus()
 
