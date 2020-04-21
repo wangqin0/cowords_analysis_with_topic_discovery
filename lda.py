@@ -5,7 +5,7 @@ import os
 from pprint import pprint
 
 # Set training parameters.
-num_topics = 20
+num_topics = 5
 chunksize = 100000
 passes = 20
 iterations = 400
@@ -15,7 +15,7 @@ eval_every = 1  # Don't evaluate lda_model perplexity, takes too much time.
 num_words = 50
 
 
-def get_grouped_words(gensim_lda_model, num_topics=-1, num_words=num_words, formatted=False):
+def get_topic_with_words(gensim_lda_model, num_topics=-1, num_words=num_words, formatted=False):
     """Get a representation for selected topics.
 
     Returns
@@ -53,7 +53,7 @@ def get_grouped_words(gensim_lda_model, num_topics=-1, num_words=num_words, form
     return shown
 
 
-word_net = catd.util.load_obj('reduced_tianya_posts_test_set_1000')
+word_net = catd.util.load_obj('reduced_weibo_COVID19_complete')
 # word_net = catd.WordNet()
 print(word_net.description())
 
@@ -76,7 +76,7 @@ lda_model = LdaModel(
     eval_every=eval_every
 )
 
-shown = get_grouped_words(gensim_lda_model=lda_model)
+shown = get_topic_with_words(gensim_lda_model=lda_model)
 pprint(shown)
 
 lda_selected_words = set()
@@ -97,4 +97,3 @@ with open(os.path.join('output', 'extracted_words', 'lda_top_' + str(num_words) 
           'w+', encoding='utf-8') as f:
     for word in lda_selected_words:
         f.write(word + '\n')
-

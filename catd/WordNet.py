@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import re
 import math
 import json
@@ -30,14 +31,14 @@ class WordNet:
     def add_stop_words_set(self, stop_words_set):
         self.stop_words_set = stop_words_set
 
-    def word_cut(self, list_of_docs, stop_words_set, user_selected_words_mode=False,
+    def word_cut(self, corpus_with_time, stop_words_set, user_selected_words_mode=False,
                  selected_part_of_speech=None, if_output_tokens=False):
         """
         :param user_selected_words_mode:
         :param stop_words_set:
         :param if_output_tokens:
         :param selected_part_of_speech:
-        :param list_of_docs:
+        :param corpus_with_time:
         :return: a list of cleaned documents contain only Chinese characters
         """
         if selected_part_of_speech is None:
@@ -46,14 +47,14 @@ class WordNet:
 
         self.add_stop_words_set(stop_words_set)
         corpus_after_cut = []
-        keep_chinese_chars = re.compile(r"[^\u4e00-\u9fa5]")
-        num_of_docs = len(list_of_docs)
+        keep_chinese_chars = re.compile(r'[^\u4e00-\u9fa5]')
+        num_of_docs = len(corpus_with_time)
         index = 0
 
-        for doc in list_of_docs:
+        for doc, time in corpus_with_time:
             list_of_cut_words = []
             # keep only Chinese characters
-            doc = keep_chinese_chars.sub(' ', doc)
+            doc = keep_chinese_chars.sub(' ', str(doc))
             for word_with_part_of_speech in jieba.posseg.dt.cut(doc):
                 word, part_of_speech = str(word_with_part_of_speech).split('/')
                 if user_selected_words_mode is False:
@@ -63,13 +64,13 @@ class WordNet:
                     if word not in stop_words_set and part_of_speech in selected_part_of_speech and len(word) > 1 \
                             and word in self.selected_words:
                         list_of_cut_words.append(word)
-            corpus_after_cut.append(list_of_cut_words)
+            corpus_after_cut.append((list_of_cut_words, time))
 
             index += 1
             display_progress('word cut', index, num_of_docs)
 
         if if_output_tokens:
-            save_obj(corpus_after_cut, 'list_of_docs')
+            save_obj(corpus_after_cut, 'corpus_with_time')
 
         return corpus_after_cut
 
@@ -162,8 +163,8 @@ class WordNet:
         num_of_docs = len(coded_corpus)
         index = 0
 
-        # generate nodes
-        for doc in coded_corpus:
+        # generate doc
+        for doc, time in coded_corpus:
             word_id_counter = count_word_in_doc(doc)
 
             for node_id in word_id_counter.keys():
@@ -177,10 +178,16 @@ class WordNet:
                     else:
                         self.edges[node_id][neighbor_id] += 1
 
-            self.docs.append(Doc(doc_id=index, word_id_count_in_doc=word_id_counter, number_of_words=len(doc)))
+                if time in self.nodes[node_id].time_statistics.keys():
+                    self.nodes[node_id].time_statistics[time] += 1
+                else:
+                    self.nodes[node_id].time_statistics[time] = 1
+
+            self.docs.append(
+                Doc(doc_id=index, word_id_count_in_doc=word_id_counter, number_of_words=len(doc), time=time))
 
             index += 1
-            display_progress('add cut corpus', index, num_of_docs)
+            display_progress('add cut corpus_with_time', index, num_of_docs)
 
         for node in self.nodes:
             node.inverse_document_frequency = math.log(num_of_docs / node.doc_count + 1)
@@ -267,15 +274,15 @@ class WordNet:
     def word_id_to_word(self, node_id):
         return self.nodes[node_id].word
 
-    def generate_nodes_hash_and_edge(self, cut_corpus):
+    def generate_nodes_hash_and_edge(self, cut_corpus_with_time):
         """
         setup all the nodes, edges, and a dict to get nodes by word
-        :param cut_corpus: list of lists of cut word
+        :param cut_corpus_with_time: list of lists of cut word
         :return: void
         """
         word_set = set()
-        for doc in cut_corpus:
-            for word in doc:
+        for cut_doc, time in cut_corpus_with_time:
+            for word in cut_doc:
                 word_set.add(word)
 
         num_of_nodes = len(word_set)
@@ -292,12 +299,24 @@ class WordNet:
             display_progress('generate_nodes_hash', index, num_of_nodes)
 
         coded_corpus = []
-        for doc in cut_corpus:
+        for cut_doc, time in cut_corpus_with_time:
             id_doc = []
-            for word in doc:
-                id_doc.append(self.word_to_id(word))
-            coded_corpus.append(id_doc)
+            for word_to_be_coverted in cut_doc:
+                id_doc.append(self.word_to_id(word_to_be_coverted))
+            coded_corpus.append((id_doc, time))
         return coded_corpus
+
+    def export_for_gephi(self):
+        with open(os.path.join('output', 'gephi_nodes.csv'), 'w+', encoding='utf-8') as nodes_file:
+            nodes_file.write('Id, Label' + '\n')
+            for node in self.nodes:
+                nodes_file.write(str(node.node_id) + ', ' + str(node.word) + '\n')
+
+        with open(os.path.join('output', 'gephi_edges.csv'), 'w+', encoding='utf-8') as edges_file:
+            edges_file.write('Source, Target, Weight\n')
+            for source in self.edges.keys():
+                for target in self.edges[source].keys():
+                    edges_file.write(str(source) + ', ' + str(target) + ', ' + str(self.edges[source][target]) + '\n')
 
     def export(self, dest_dir=os.path.join('../output', 'exported'), optional_postfix=''):
         if len(optional_postfix) != 0:

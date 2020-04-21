@@ -1,10 +1,11 @@
 class Doc:
-    def __init__(self, doc_id, word_id_count_in_doc, number_of_words):
+    def __init__(self, doc_id, word_id_count_in_doc, number_of_words, time):
         self.doc_id = doc_id
         self.number_of_words = number_of_words
         self.word_id_count_in_doc = word_id_count_in_doc
         self.word_id_tf = {}
         self.word_id_tf_idf = {}
+        self.time = time
 
     def __str__(self):
         return '\n[Doc info]\ndoc_id: {0}\tnumber_of_words: {1}'.format(self.doc_id, self.number_of_words)

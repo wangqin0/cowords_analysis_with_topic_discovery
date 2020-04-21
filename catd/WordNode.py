@@ -6,6 +6,7 @@ class WordNode:
         self.word_count = word_count
         self.inverse_document_frequency = inverse_document_frequency
         self.group = group
+        self.time_statistics = {}
 
     def __str__(self):
         return '[node info] id: {:8} doc_count: {:5}  word_count: {:8}  inverse_document_frequency: {:3.5}  word: {}'\
