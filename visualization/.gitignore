@@ -3,4 +3,6 @@
 *.csv
 *.ttc
 *.ttf
-/catd/*
+*.db
+
+/archive

@@ -6,7 +6,7 @@ import os
 catd.util.set_up_current_dir_as_working_dir()
 
 corpus = []
-with open(os.path.join('data', 'original_data', 'tianya_posts_test_set_10.txt'), encoding='utf-8') as f:
+with open(os.path.join('data', 'original_data', 'tianya_posts_test_set_100.txt'), encoding='utf-8') as f:
     for line in f:
         corpus.append(line)
 

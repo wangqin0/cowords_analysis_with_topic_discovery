@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+import re
 import catd
 import os
 import sqlite3
@@ -13,11 +13,12 @@ def read_txt_input(dataset_filename):
 
 
 def read_sql_database_input(database_filename):
+    remove_hashtag = re.compile(r'#[\w-]+#')
     con = sqlite3.connect(os.path.join('data', 'original_data', database_filename))
     cursor = con.cursor()
     cursor.execute("SELECT post_content, post_time FROM posts")
     rows = cursor.fetchall()
-    corpus = [(post_content, post_time) for post_content, post_time in rows]
+    corpus = [(remove_hashtag.sub(' ', str(post_content)), post_time) for post_content, post_time in rows]
     return corpus
 
 
@@ -56,6 +57,10 @@ cut_corpus_new = word_net_with_selection.word_cut(corpus_with_time, stop_words_s
 coded_corpus = word_net_with_selection.generate_nodes_hash_and_edge(cut_corpus_new)
 word_net_with_selection.add_cut_corpus(coded_corpus)
 print(word_net_with_selection.description())
+
+# running lda
+word_net_with_selection.generate_lda_model()
+topics = word_net_with_selection.get_topics()
 
 catd.util.save_obj(word_net_with_selection, 'reduced_' + dataset.split('.')[0])
 print()

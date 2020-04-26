@@ -1,5 +1,5 @@
 class WordNode:
-    def __init__(self, node_id, word, doc_count=0, word_count=0, inverse_document_frequency=-1, group=-1):
+    def __init__(self, node_id, word, doc_count=0, word_count=0, inverse_document_frequency=-1, group=None):
         self.node_id = node_id
         self.word = word
         self.doc_count = doc_count

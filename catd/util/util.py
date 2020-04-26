@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import urllib.request
 import logging
+from gensim import matutils
 
 
 logging.getLogger().setLevel(logging.INFO)
@@ -48,9 +49,9 @@ def display_progress(prompt, curr_progress, total):
 
 def collect_mutual_words_to_set_from_dir(dir_of_txt_files):
     """
-    generate stop words set from a given directory, by iterating all the txt files
-    :param dir_of_txt_files: each txt file should contain words sperated by '\n'
-    :return: a complete set of words
+    generate stop word set from a given directory, by iterating all the txt files
+    :param dir_of_txt_files: each txt file should contain word sperated by '\n'
+    :return: a complete set of word
     """
     word_set = set()
     is_initialized = False
@@ -71,9 +72,9 @@ def collect_mutual_words_to_set_from_dir(dir_of_txt_files):
 
 def collect_all_words_to_set_from_dir(dir_of_txt_files):
     """
-    generate stop words set from a given directory, by iterating all the txt files
-    :param dir_of_txt_files: each txt file should contain words sperated by '\n'
-    :return: a complete set of words
+    generate stop word set from a given directory, by iterating all the txt files
+    :param dir_of_txt_files: each txt file should contain word sperated by '\n'
+    :return: a complete set of word
     """
     word_set = set()
     for filename in os.listdir(dir_of_txt_files):
@@ -93,3 +94,42 @@ def count_word_in_doc(list_of_words):
         else:
             word_counter_for_separate_doc[word] += 1
     return word_counter_for_separate_doc
+
+
+def get_topic_with_words(gensim_lda_model, num_topics=-1, num_words=None, formatted=False):
+    """
+    From Gensim: Get a representation for selected topics.
+
+    Returns
+    -------
+    list of {str, tuple of (str, float)}
+        a list of topics, each represented either as a string (when `formatted` == True) or word-probability
+        pairs.
+
+    """
+    if num_topics < 0 or num_topics >= gensim_lda_model.num_topics:
+        num_topics = gensim_lda_model.num_topics
+        chosen_topics = range(num_topics)
+    else:
+        num_topics = min(num_topics, gensim_lda_model.num_topics)
+
+        # add a little random jitter, to randomize results around the same alpha
+        sort_alpha = gensim_lda_model.alpha + 0.0001 * gensim_lda_model.random_state.rand(len(gensim_lda_model.alpha))
+        # random_state.rand returns float64, but converting back to dtype won't speed up anything
+
+        sorted_topics = list(matutils.argsort(sort_alpha))
+        chosen_topics = sorted_topics[:num_topics // 2] + sorted_topics[-num_topics // 2:]
+
+    shown = []
+
+    topic = gensim_lda_model.state.get_lambda()
+    for i in chosen_topics:
+        topic_ = topic[i]
+        topic_ = topic_ / topic_.sum()  # normalize to probability distribution
+        bestn = matutils.argsort(topic_, num_words, reverse=True)
+        topic_ = [(gensim_lda_model.id2word[id], topic_[id]) for id in bestn]
+        if formatted:
+            topic_ = ' + '.join('%.3f*"%s"' % (v, k) for k, v in topic_)
+        shown.append((i, topic_))
+
+    return shown

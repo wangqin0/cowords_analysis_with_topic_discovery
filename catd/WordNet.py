@@ -8,18 +8,22 @@ from jieba import posseg
 from .WordNode import WordNode
 from .Doc import Doc
 from .util import *
+from .Topic import Topic
 
 
 class WordNet:
     def __init__(self):
+        # core
         self.docs = []
         self.nodes = []
         self.edges = {}
+        self.topics = []
 
+        # supportive
         self.get_node_by_str = {}
-
         self.stop_words_set = set()
         self.selected_words = set()
+        self.lda_model = None
 
     def add_selected_word_ids_to_set(self, words, intersection_mode=False):
         if intersection_mode and len(self.selected_words) != 0:
@@ -30,6 +34,9 @@ class WordNet:
 
     def add_stop_words_set(self, stop_words_set):
         self.stop_words_set = stop_words_set
+
+    def get_stop_words_set(self):
+        return self.stop_words_set
 
     def word_cut(self, corpus_with_time, stop_words_set, user_selected_words_mode=False,
                  selected_part_of_speech=None, if_output_tokens=False):
@@ -117,7 +124,7 @@ class WordNet:
 
     def description(self):
         """
-        output numbers of valid words, edges, and docs
+        output numbers of valid word, edges, and docs
         :return: void
         """
         num_of_edges = 0
@@ -148,15 +155,9 @@ class WordNet:
                                + '  {}'.format(self.edges[word_id][neighbor_id]) + '\n'
         return edge_info
 
-    def add_stop_words_set(self, stop_words_set):
-        self.stop_words_set = stop_words_set
-
-    def get_stop_words_set(self):
-        return self.stop_words_set
-
     def add_cut_corpus(self, coded_corpus):
         """
-        :param coded_corpus: list of lists of cut words
+        :param coded_corpus: list of lists of cut word
         :return: void
         """
 
@@ -199,7 +200,7 @@ class WordNet:
 
     def get_cut_corpus(self):
         """
-        :return: list of lists of words
+        :return: list of lists of word
         """
         corpus = []
         for doc in self.docs:
@@ -230,7 +231,7 @@ class WordNet:
 
     def generate_docs_to_bag_of_words(self):
         """
-        Convert each doc into the bag-of-words format
+        Convert each doc into the bag-of-word format
         :return: list of `(token_id, token_count)` tuples
         """
         bow = []
@@ -241,10 +242,70 @@ class WordNet:
             bow.append(doc_bow)
         return bow
 
-    def extract_topics(self):
-        corpus = self.get_cut_corpus()
+    def generate_lda_model(self, num_topics=5, chunksize=100000, passes=20, iterations=400, eval_every=1):
+        id2word = self.generate_id_to_word()
+        corpus = self.generate_docs_to_bag_of_words()
 
-        pass
+        print('[generate_lda_model] generating model')
+        self.lda_model = LdaModel(
+            corpus=corpus,
+            id2word=id2word,
+            chunksize=chunksize,
+            alpha='auto',
+            eta='auto',
+            iterations=iterations,
+            num_topics=num_topics,
+            passes=passes,
+            eval_every=eval_every
+        )
+
+        topics = get_topic_with_words(gensim_lda_model=self.lda_model)
+
+        for topic in topics:
+            doc_count_weighted = 0
+            word_count_weighted = 0
+            inverse_document_frequency_weighted = 0
+            time_statistics_aggregated = {}
+
+            for word, contribution in topic[1]:
+                node = self.get_node_by_str[word]
+
+                # update group for nodes
+                if node.group:
+                    if contribution > node.group[1]:
+                        node.group = (topic[0], contribution)
+                else:
+                    node.group = (topic[0], contribution)
+
+                doc_count_weighted += node.doc_count * contribution
+                word_count_weighted += node.word_count * contribution
+                inverse_document_frequency_weighted += node.inverse_document_frequency * contribution
+
+                for date in node.time_statistics:
+                    if time_statistics_aggregated.get(date):
+                        time_statistics_aggregated[date] += node.time_statistics[date]
+                    else:
+                        time_statistics_aggregated[date] = node.time_statistics[date]
+
+            sorted_time_statistics_aggregated = []
+            date_list = time_statistics_aggregated.keys()
+            for key in sorted(date_list):
+                sorted_time_statistics_aggregated.append((key, time_statistics_aggregated[key]))
+
+            new_topic = Topic(topic[0],
+                              topic[1],
+                              doc_count_weighted,
+                              word_count_weighted,
+                              inverse_document_frequency_weighted,
+                              sorted_time_statistics_aggregated)
+            self.topics.append(new_topic)
+            display_progress('creat topic obj', topic[0], num_topics)
+
+    def get_topics(self):
+        if self.topics:
+            return self.topics
+        else:
+            print('[get_topics] lda model not created.')
 
     def get_top_percent_words_by_tf_idf_in_each_doc(self, percent):
         extracted_words_id_set = set()
@@ -267,6 +328,29 @@ class WordNet:
                 extracted_words_set.add(node.word)
 
         return extracted_words_set
+
+    def get_top_words_in_each_topics(self, topK=None):
+        if self.topics:
+            if topK:
+                lda_selected_words_set = set()
+                word_counter = 0
+                for topic in self.topics:
+                    for word_with_contribution in topic[1]:
+                        word = word_with_contribution[0]
+                        lda_selected_words_set.add(word)
+                        word_counter += 1
+                        if word_counter >= topK:
+                            break
+                return lda_selected_words_set
+            else:
+                lda_selected_words_set = set()
+                for topic in self.topics:
+                    for word_with_contribution in topic[1]:
+                        word = word_with_contribution[0]
+                        lda_selected_words_set.add(word)
+                return lda_selected_words_set
+        else:
+            print('[get_topics] lda model not created.')
 
     def word_to_id(self, word):
         return self.get_node_by_str[word].node_id
