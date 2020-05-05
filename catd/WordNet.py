@@ -2,28 +2,35 @@
 import re
 import math
 import json
-from gensim.models import LdaModel
+from gensim.models import LdaModel, CoherenceModel
+from gensim import corpora
 import jieba
 from jieba import posseg
 from .WordNode import WordNode
 from .Doc import Doc
 from .util import *
 from .Topic import Topic
+import matplotlib.pyplot as plt
+import matplotlib
 
 
 class WordNet:
     def __init__(self):
         # core
         self.docs = []
+
         self.nodes = []
         self.edges = {}
+
         self.topics = []
+        self.topic_edge_matrix = []
 
         # supportive
         self.get_node_by_str = {}
         self.stop_words_set = set()
         self.selected_words = set()
         self.lda_model = None
+        self.topic_feature_words_intersection = []
 
     def add_selected_word_ids_to_set(self, words, intersection_mode=False):
         if intersection_mode and len(self.selected_words) != 0:
@@ -131,7 +138,7 @@ class WordNet:
         for word_id in self.edges.keys():
             num_of_edges += len(self.edges[word_id])
         return '[word_net info]\n' \
-               '\tnumber of word_net.docs: {}\n\tnumber of word_net.nodes: {}\n\tnumber of word_net.edges: {}'\
+               '\tnumber of word_net.docs: {}\n\tnumber of word_net.nodes: {}\n\tnumber of word_net.edges: {}' \
             .format(len(self.docs), len(self.nodes), num_of_edges)
 
     def docs_description(self):
@@ -151,8 +158,8 @@ class WordNet:
         for word_id in self.edges.keys():
             for neighbor_id in self.edges[word_id]:
                 edge_info += '\t{:8}'.format(self.word_id_to_word(word_id)) \
-                               + '-> {:8}'.format(self.word_id_to_word(neighbor_id)) \
-                               + '  {}'.format(self.edges[word_id][neighbor_id]) + '\n'
+                             + '-> {:8}'.format(self.word_id_to_word(neighbor_id)) \
+                             + '  {}'.format(self.edges[word_id][neighbor_id]) + '\n'
         return edge_info
 
     def add_cut_corpus(self, coded_corpus):
@@ -242,11 +249,11 @@ class WordNet:
             bow.append(doc_bow)
         return bow
 
-    def generate_lda_model(self, num_topics=5, chunksize=100000, passes=20, iterations=400, eval_every=1):
+    def train_lda_model(self, num_topics=5, chunksize=100000, passes=20, iterations=400, eval_every=1):
         id2word = self.generate_id_to_word()
         corpus = self.generate_docs_to_bag_of_words()
 
-        print('[generate_lda_model] generating model')
+        print('[train_lda_model] generating model')
         self.lda_model = LdaModel(
             corpus=corpus,
             id2word=id2word,
@@ -259,15 +266,77 @@ class WordNet:
             eval_every=eval_every
         )
 
-        topics = get_topic_with_words(gensim_lda_model=self.lda_model)
+    def batch_coherence_for_lda_models(self, num_topics_start, num_topics_stop, num_topics_step, chunksize=100000,
+                                       passes=20, iterations=400, eval_every=1):
+        id2word = self.generate_id_to_word()
+        word2id = self.generate_word_to_id()
+        corpus = self.generate_docs_to_bag_of_words()
+        cut_texts = self.get_cut_corpus()
+        dictionary = corpora.Dictionary()
+        dictionary.id2token = id2word
+        dictionary.token2id = word2id
 
+        print('[batch_coherence_for_lda_models] start batching model, may take a while so you can get your coffee now.')
+        model_list = []
+        # coherence_values = []
+
+        for num_topics in range(num_topics_start, num_topics_stop, num_topics_step):
+            print('[batch_coherence_for_lda_models] batching ', num_topics,
+                  '/ range(' + str(num_topics_start) + ', ' + str(num_topics_stop) + ', ' + str(num_topics_step) + ')')
+            lda_model = LdaModel(
+                    corpus=corpus,
+                    id2word=id2word,
+                    chunksize=chunksize,
+                    alpha='auto',
+                    eta='auto',
+                    iterations=iterations,
+                    num_topics=num_topics + 1,
+                    passes=passes,
+                    eval_every=eval_every
+                )
+            model_list.append(lda_model)
+            # coherence_model = CoherenceModel(model=lda_model, texts=cut_texts, dictionary=dictionary, coherence='c_v')
+            # coherence_values.append(coherence_model.get_coherence())
+
+        x = range(num_topics_start, num_topics_stop, num_topics_step)
+
+        for index, lda in zip(x, model_list):
+            print("Num Topics =", index, 'lda.log_perplexity = ', lda.log_perplexity(corpus))
+
+        # x = range(num_topics_start, num_topics_stop, num_topics_step)
+        #
+        # for index, cv, lda in zip(x, coherence_values, model_list):
+        #     print("Num Topics =", index, " has Coherence Value of", round(cv, 4), 'lda.log_perplexity = ', lda.log_perplexity())
+        #
+        # matplotlib.use('TkAgg')
+        # plt.plot(x, coherence_values)
+        # plt.xlabel("Num Topics")
+        # plt.ylabel("Coherence score")
+        # plt.legend("coherence_values", loc='best')
+        # plt.show()
+
+    def generate_topics_from_lda_model(self):
+        if not self.lda_model:
+            print('[generate_topics_from_lda_model] no LdA model in WordNet data structure.')
+            return
+        topics = get_topic_with_words(gensim_lda_model=self.lda_model)
         for topic in topics:
             doc_count_weighted = 0
             word_count_weighted = 0
             inverse_document_frequency_weighted = 0
             time_statistics_aggregated = {}
 
+            # get feature words of each topic
+            feature_words = []
+            total_contribution = 0
             for word, contribution in topic[1]:
+                if total_contribution > 0.8:
+                    break
+                else:
+                    feature_words.append((word, contribution))
+                    total_contribution += contribution
+
+            for word, contribution in feature_words:
                 node = self.get_node_by_str[word]
 
                 # update group for nodes
@@ -282,10 +351,11 @@ class WordNet:
                 inverse_document_frequency_weighted += node.inverse_document_frequency * contribution
 
                 for date in node.time_statistics:
+                    new_time_statistics = node.time_statistics[date] * contribution
                     if time_statistics_aggregated.get(date):
-                        time_statistics_aggregated[date] += node.time_statistics[date]
+                        time_statistics_aggregated[date] += new_time_statistics
                     else:
-                        time_statistics_aggregated[date] = node.time_statistics[date]
+                        time_statistics_aggregated[date] = new_time_statistics
 
             sorted_time_statistics_aggregated = []
             date_list = time_statistics_aggregated.keys()
@@ -294,12 +364,38 @@ class WordNet:
 
             new_topic = Topic(topic[0],
                               topic[1],
+                              feature_words,
                               doc_count_weighted,
                               word_count_weighted,
                               inverse_document_frequency_weighted,
                               sorted_time_statistics_aggregated)
             self.topics.append(new_topic)
-            display_progress('creat topic obj', topic[0], num_topics)
+
+    def generate_topic_graph(self):
+        num_topic = range(len(self.topics))
+        words_intersection = [[[] for x in num_topic] for y in num_topic]
+        for topic in self.topics:
+            words_intersection[topic.topic_id][topic.topic_id] = set(word for word, contribution in topic.feature_words)
+        for x in num_topic:
+            for y in num_topic:
+                if x == y:
+                    continue
+                else:
+                    words_intersection[x][y] = words_intersection[x][x].intersection(words_intersection[y][y])
+        topic_edge = [[[] for x in num_topic] for y in num_topic]
+        for x in num_topic:
+            for y in num_topic:
+                if x == y:
+                    topic_edge[x][y] = self.topics[x].doc_count_weighted
+                else:
+                    shared_feature_words = words_intersection[x][y]
+                    target_heat = 0
+                    for word, contribution in self.topics[y].feature_words:
+                        if word in shared_feature_words:
+                            target_heat += self.get_node_by_str[word].doc_count * contribution
+                    topic_edge[x][y] = target_heat / self.topics[x].doc_count_weighted
+        self.topic_feature_words_intersection = words_intersection
+        self.topic_edge_matrix = topic_edge
 
     def get_topics(self):
         if self.topics:
@@ -410,3 +506,7 @@ class WordNet:
             output_file.write('# word_net.docs')
             for doc in self.docs:
                 pass
+
+    def topic_time_statistics_aggregated_visualization(self):
+        for topic in self.topics:
+            pass

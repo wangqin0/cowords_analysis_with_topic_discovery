@@ -59,8 +59,9 @@ word_net_with_selection.add_cut_corpus(coded_corpus)
 print(word_net_with_selection.description())
 
 # running lda
-word_net_with_selection.generate_lda_model()
-topics = word_net_with_selection.get_topics()
+word_net_with_selection.train_lda_model()
+word_net_with_selection.generate_topics_from_lda_model()
+word_net_with_selection.generate_topic_graph()
 
 catd.util.save_obj(word_net_with_selection, 'reduced_' + dataset.split('.')[0])
 print()

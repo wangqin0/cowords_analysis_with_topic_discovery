@@ -1,4 +1,5 @@
 # Ignore everything in this directory
-original_tianya_posts_test_set_100.pkl
+*
 # Except this file
+!original_tianya_posts_test_set_100.pkl
 !.gitignore
