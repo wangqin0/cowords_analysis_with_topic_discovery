@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import datetime
 import re
 import math
 import json
@@ -6,6 +7,8 @@ from gensim.models import LdaModel, CoherenceModel
 from gensim import corpora
 import jieba
 from jieba import posseg
+from wordcloud import WordCloud
+
 from .WordNode import WordNode
 from .Doc import Doc
 from .util import *
@@ -507,6 +510,56 @@ class WordNet:
             for doc in self.docs:
                 pass
 
-    def topic_time_statistics_aggregated_visualization(self):
-        for topic in self.topics:
-            pass
+    def topic_time_statistics_aggregated_visualization(self,
+                                                       start_date=datetime.date(2019, 12, 31),
+                                                       end_date=datetime.date(2020, 4, 21)):
+        delta = datetime.timedelta(days=1)
+
+        x_axis = []
+        extracted_data = [[] for i in self.topics]
+
+        while start_date <= end_date:
+            curr_date = start_date.strftime("%Y%m%d")
+            start_date += delta
+            x_axis.append(str(curr_date))
+
+            for topic in self.topics:
+                topic_count_on_curr_date = 0
+
+                for date, count in topic.time_statistics_aggregated:
+                    if date == curr_date:
+                        topic_count_on_curr_date = count
+
+                extracted_data[topic.topic_id].append(topic_count_on_curr_date)
+
+        matplotlib.use('TkAgg')
+
+        legend = []
+        for index, topic_data in enumerate(extracted_data):
+            plt.plot(x_axis, topic_data)
+            legend.append('topic_' + str(index))
+
+        plt.legend(legend, loc='upper left')
+        plt.show()
+
+    def show_word_cloud(self):
+        corpus = self.get_cut_corpus()
+        # Join the different processed titles together.
+        long_string = ''
+        for doc in corpus:
+            for word in doc:
+                long_string += word + ', '
+
+        wordcloud = WordCloud(width=1920, height=1920,
+                              background_color='white',
+                              font_path='data/STHeiti_Medium.ttc',
+                              min_font_size=10, max_font_size=400,
+                              collocations=False).generate(long_string)
+
+        # plot the WordCloud image
+        matplotlib.use('TkAgg')
+        plt.figure(figsize=(8, 8), facecolor=None)
+        plt.imshow(wordcloud)
+        plt.axis("off")
+        plt.tight_layout(pad=0)
+        plt.show()

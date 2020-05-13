@@ -3,8 +3,11 @@ from wordcloud import WordCloud, STOPWORDS
 import catd
 import matplotlib.pyplot as plt
 import pandas as pd
+import matplotlib
 
-word_net = catd.util.load_obj('reduced_tianya_posts_test_set_1000')
+matplotlib.use('TkAgg')
+
+word_net = catd.util.load_obj('reduced_weibo_COVID19_complete')
 
 corpus = word_net.get_cut_corpus()
 
@@ -25,5 +28,4 @@ plt.figure(figsize=(8, 8), facecolor=None)
 plt.imshow(wordcloud)
 plt.axis("off")
 plt.tight_layout(pad=0)
-
 plt.show()
