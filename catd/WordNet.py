@@ -411,6 +411,8 @@ class WordNet:
         for doc in self.docs:
             sorted_list = sorted(doc.word_id_tf_idf, key=lambda j: doc.word_id_tf_idf[j], reverse=True)
             extracted_sorted_list = sorted_list[0:int(len(sorted_list) * percent)]
+            if len(extracted_sorted_list) < 2 and len(sorted_list) > 2:
+                extracted_sorted_list = sorted_list[:1]
             extracted_words_id_set.update(set(extracted_sorted_list))
 
         extracted_words_set = set()
