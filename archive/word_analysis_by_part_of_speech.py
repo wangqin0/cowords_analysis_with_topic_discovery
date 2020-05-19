@@ -9,7 +9,7 @@ def keep_only_chinese(curr_word):
     return line
 
 
-docs = open('data/original_data/tianya_posts_test_set_100.txt')
+docs = open('../data/original_data/tianya_posts_test_set_100.txt')
 cut_result = {}
 for doc in docs:
     for word_with_property in jieba.posseg.dt.cut(keep_only_chinese(doc)):

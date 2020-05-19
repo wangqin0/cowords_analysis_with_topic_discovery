@@ -1,4 +1,6 @@
 import pickle
+import re
+import sqlite3
 import sys
 import os
 from pathlib import Path
@@ -133,3 +135,21 @@ def get_topic_with_words(gensim_lda_model, num_topics=-1, num_words=None, format
         shown.append((i, topic_))
 
     return shown
+
+
+def read_txt_input(dataset_filename):
+    corpus = []
+    with open(os.path.join('data', 'original_data', dataset_filename), encoding='utf-8') as f:
+        for line in f:
+            corpus.append(line)
+    return corpus
+
+
+def read_sql_database_input(database_filename):
+    remove_hashtag = re.compile(r'#[\w-]+#')
+    con = sqlite3.connect(os.path.join('data', 'original_data', database_filename))
+    cursor = con.cursor()
+    cursor.execute("SELECT post_content, post_time FROM posts")
+    rows = cursor.fetchall()
+    corpus = [(remove_hashtag.sub(' ', str(post_content)), post_time) for post_content, post_time in rows]
+    return corpus

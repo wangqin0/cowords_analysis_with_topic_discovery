@@ -19,7 +19,7 @@ for doc in corpus:
 
 wordcloud = WordCloud(width=1920, height=1920,
                       background_color='white',
-                      font_path='data/STHeiti_Medium.ttc',
+                      font_path='../data/STHeiti_Medium.ttc',
                       min_font_size=10, max_font_size=400,
                       collocations=False).generate(long_string)
 

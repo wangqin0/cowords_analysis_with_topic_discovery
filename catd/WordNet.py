@@ -7,6 +7,7 @@ from gensim.models import LdaModel, CoherenceModel
 from gensim import corpora
 import jieba
 from jieba import posseg
+import pandas as np
 from wordcloud import WordCloud
 
 from .WordNode import WordNode
@@ -68,6 +69,8 @@ class WordNet:
         num_of_docs = len(corpus_with_time)
         index = 0
 
+        jieba.enable_parallel()
+
         for doc, time in corpus_with_time:
             list_of_cut_words = []
             # keep only Chinese characters
@@ -119,7 +122,7 @@ class WordNet:
         for node in self.nodes:
             d3_force_graph_json['nodes'].append({
                 'id': node.word,
-                'group': node.group
+                'group': node.group[0] if node.group else -1
             })
         for node_id in self.edges.keys():
             for neighbor_id in self.edges[node_id].keys():
@@ -167,7 +170,7 @@ class WordNet:
 
     def add_cut_corpus(self, coded_corpus):
         """
-        :param coded_corpus: list of lists of cut word
+        :param coded_corpus: list of lists of cut word ids
         :return: void
         """
 
@@ -279,9 +282,9 @@ class WordNet:
         dictionary.id2token = id2word
         dictionary.token2id = word2id
 
-        print('[batch_coherence_for_lda_models] start batching model, may take a while so you can get your coffee now.')
-        model_list = []
-        # coherence_values = []
+        print('[batch_coherence_for_lda_models] start batching model, may take a while.')
+        lda_model_list = []
+        coherence_values = []
 
         for num_topics in range(num_topics_start, num_topics_stop, num_topics_step):
             print('[batch_coherence_for_lda_models] batching ', num_topics,
@@ -297,26 +300,22 @@ class WordNet:
                     passes=passes,
                     eval_every=eval_every
                 )
-            model_list.append(lda_model)
-            # coherence_model = CoherenceModel(model=lda_model, texts=cut_texts, dictionary=dictionary, coherence='c_v')
-            # coherence_values.append(coherence_model.get_coherence())
+            lda_model_list.append(lda_model)
+            coherence_model = CoherenceModel(model=lda_model, texts=cut_texts, dictionary=dictionary, coherence='c_v')
+            coherence_values.append(coherence_model.get_coherence())
 
         x = range(num_topics_start, num_topics_stop, num_topics_step)
 
-        for index, lda in zip(x, model_list):
-            print("Num Topics =", index, 'lda.log_perplexity = ', lda.log_perplexity(corpus))
+        for index, cv in zip(x, coherence_values):
+            print("Num Topics =", index, " has Coherence Value of", round(cv, 4))
 
-        # x = range(num_topics_start, num_topics_stop, num_topics_step)
-        #
-        # for index, cv, lda in zip(x, coherence_values, model_list):
-        #     print("Num Topics =", index, " has Coherence Value of", round(cv, 4), 'lda.log_perplexity = ', lda.log_perplexity())
-        #
-        # matplotlib.use('TkAgg')
-        # plt.plot(x, coherence_values)
-        # plt.xlabel("Num Topics")
-        # plt.ylabel("Coherence score")
-        # plt.legend("coherence_values", loc='best')
-        # plt.show()
+        matplotlib.use('TkAgg')
+        plt.plot(x, coherence_values)
+        plt.xlabel("Num Topics")
+        plt.ylabel("Coherence score")
+        plt.legend("coherence_values", loc='best')
+        plt.show()
+        return range(num_topics_start, num_topics_stop, num_topics_step), coherence_values
 
     def generate_topics_from_lda_model(self):
         if not self.lda_model:
@@ -491,26 +490,18 @@ class WordNet:
             coded_corpus.append((id_doc, time))
         return coded_corpus
 
-    def export_for_gephi(self):
+    def export_word_net_for_gephi(self):
         with open(os.path.join('output', 'gephi_nodes.csv'), 'w+', encoding='utf-8') as nodes_file:
-            nodes_file.write('Id, Label' + '\n')
+            nodes_file.write('Id, Label, Group, Doc_count' + '\n')
             for node in self.nodes:
-                nodes_file.write(str(node.node_id) + ', ' + str(node.word) + '\n')
+                nodes_file.write(str(node.node_id) + ', ' + str(node.word) + ', '
+                                 + str(node.group[0] if node.group else -1) + ', ' + str(node.doc_count) + '\n')
 
         with open(os.path.join('output', 'gephi_edges.csv'), 'w+', encoding='utf-8') as edges_file:
             edges_file.write('Source, Target, Weight\n')
             for source in self.edges.keys():
                 for target in self.edges[source].keys():
                     edges_file.write(str(source) + ', ' + str(target) + ', ' + str(self.edges[source][target]) + '\n')
-
-    def export(self, dest_dir=os.path.join('../output', 'exported'), optional_postfix=''):
-        if len(optional_postfix) != 0:
-            optional_postfix = '_' + optional_postfix
-        with open(os.path.join(dest_dir, 'data_structure', optional_postfix, '.txt'),
-                  'w+', encoding='utf-8') as output_file:
-            output_file.write('# word_net.docs')
-            for doc in self.docs:
-                pass
 
     def topic_time_statistics_aggregated_visualization(self,
                                                        start_date=datetime.date(2019, 12, 31),
@@ -534,14 +525,25 @@ class WordNet:
 
                 extracted_data[topic.topic_id].append(topic_count_on_curr_date)
 
-        matplotlib.use('TkAgg')
-
         legend = []
-        for index, topic_data in enumerate(extracted_data):
-            plt.plot(x_axis, topic_data)
-            legend.append('topic_' + str(index))
 
-        plt.legend(legend, loc='upper left')
+        for j in range(len(extracted_data[0])):
+            sum = 0
+            for i in range(len(extracted_data)):
+                sum += extracted_data[i][j]
+            if sum == 0:
+                continue
+            for i in range(len(extracted_data)):
+                extracted_data[i][j] /= sum
+
+        matplotlib.use('TkAgg')
+        fig, ax = plt.subplots()
+        ax.stackplot(x_axis, extracted_data)
+        plt.legend(legend, loc='best')
+        # TODO: set auto loc legend
+        plt.xticks([])
+        plt.yticks([])
+        plt.axis('off')
         plt.show()
 
     def show_word_cloud(self):
@@ -565,3 +567,15 @@ class WordNet:
         plt.axis("off")
         plt.tight_layout(pad=0)
         plt.show()
+
+    def output_topic_edge_matrix_to_gephi(self):
+        with open(os.path.join('output', 'topic_nodes_gephi.csv'), 'w+', encoding='utf-8') as nodes_file, open(os.path.join('output', 'topic_edges_gephi.csv'), 'w+', encoding='utf-8') as edges_file:
+            nodes_file.write('Id, Label, Group, Doc_count' + '\n')
+            edges_file.write('Source, Target, Label, Weight\n')
+            for source_topic_id in range(len(self.topic_edge_matrix)):
+                for target_topic_id in range(len(self.topic_edge_matrix[0])):
+                    value = self.topic_edge_matrix[source_topic_id][target_topic_id]
+                    if source_topic_id == target_topic_id:
+                        nodes_file.write('{id}, Topic_{id}, {id}, {value}\n'.format(id = source_topic_id, value = value))
+                    else:
+                        edges_file.write('{}, {}, {}, {}\n'.format(source_topic_id, target_topic_id, value, value))
