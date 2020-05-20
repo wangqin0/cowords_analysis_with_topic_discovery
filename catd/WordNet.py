@@ -256,7 +256,7 @@ class WordNet:
             bow.append(doc_bow)
         return bow
 
-    def train_lda_model(self, num_topics=5, chunksize=100000, passes=20, iterations=400, eval_every=1):
+    def train_lda_model(self, num_topics=6, chunksize=100000, passes=20, iterations=400, eval_every=1):
         id2word = self.generate_id_to_word()
         corpus = self.generate_docs_to_bag_of_words()
 
