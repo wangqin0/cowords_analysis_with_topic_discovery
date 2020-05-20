@@ -1,13 +1,29 @@
 import catd
+import matplotlib
+import matplotlib.pyplot as plt
+import numpy as np
 
 word_net = catd.util.load_obj('reduced_weibo_COVID19')
 # word_net = catd.WordNet()
 
-# word_net.topic_time_statistics_aggregated_visualization()
-# word_net.show_word_cloud()
+doc_lens = [len(doc) for doc in word_net.docs]
+c = 0
+for doc_len in doc_lens:
+    if doc_len == 1:
+        c += 1
+print(c)
 
-# word_net.output_d3_force_graph_json()
-# topic_num, coherence_model_list = word_net.batch_coherence_for_lda_models(5, 51, 5)
-# catd.util.save_obj(coherence_model_list, 'coherence_model_list')
-
-word_net.output_topic_edge_matrix_to_gephi()
+# # Plot
+# plt.figure(figsize=(16,7), dpi=160)
+# plt.hist(doc_lens, bins=100, color='navy')
+# # plt.text(750, 100, "Mean   : " + str(round(np.mean(doc_lens))))
+# # plt.text(750,  90, "Median : " + str(round(np.median(doc_lens))))
+# # plt.text(750,  80, "Stdev   : " + str(round(np.std(doc_lens))))
+# plt.text(750,  70, "20%ile    : " + str(round(np.quantile(doc_lens, q=0.2))))
+# # plt.text(750,  60, "99%ile  : " + str(round(np.quantile(doc_lens, q=0.99))))
+#
+# plt.gca().set(xlim=(0, 1000), ylabel='Number of Documents', xlabel='Document Word Count')
+# plt.tick_params(size=16)
+# plt.xticks(np.linspace(0, 100, 10))
+# plt.title('Distribution of Document Word Counts', fontdict=dict(size=22))
+# plt.show()

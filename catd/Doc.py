@@ -9,7 +9,9 @@ class Doc:
 
     def __str__(self):
         return '\n[Doc info]\ndoc_id: {0}\tnumber_of_words: {1}'.format(self.doc_id, self.number_of_words)
-        pass
+
+    def __len__(self):
+        return self.number_of_words
 
     def description(self, word_net):
         doc_info = '\n[Doc info] doc_id: {0}\tnumber_of_words: {1}\n\tword_id_count_in_doc:\n' \

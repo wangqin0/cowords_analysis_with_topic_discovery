@@ -84,7 +84,8 @@ class WordNet:
                     if word not in stop_words_set and part_of_speech in selected_part_of_speech and len(word) > 1 \
                             and word in self.selected_words:
                         list_of_cut_words.append(word)
-            corpus_after_cut.append((list_of_cut_words, time))
+            if len(list_of_cut_words) > 1:
+                corpus_after_cut.append((list_of_cut_words, time))
 
             index += 1
             display_progress('word cut', index, num_of_docs)
