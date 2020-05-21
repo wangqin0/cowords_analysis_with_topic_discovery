@@ -43,7 +43,7 @@ word_net_with_selection.generate_topics_from_lda_model()
 # vis
 word_net_with_selection.generate_topic_graph()
 word_net_with_selection.topic_time_statistics_aggregated_visualization()
-word_net_with_selection.show_word_cloud()
+# word_net_with_selection.show_word_cloud()
 
 catd.util.save_obj(word_net_with_selection, 'reduced_' + dataset.split('.')[0])
 print()

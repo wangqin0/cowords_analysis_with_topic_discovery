@@ -41,23 +41,27 @@ def reduce_word_net(original_word_net, dataset, corpus_with_time, stop_words_set
     cut_corpus_new = word_net_with_selection.word_cut(corpus_with_time, stop_words_set, user_selected_words_mode=True)
     coded_corpus = word_net_with_selection.generate_nodes_hash_and_edge(cut_corpus_new)
     word_net_with_selection.add_cut_corpus(coded_corpus)
-    print(word_net_with_selection.description())
 
     # running lda
-    if len(word_net_with_selection.nodes) == 0 or len(word_net_with_selection.edges) == 0:
-        print('    Empty net, skip\n')
-        catd.util.save_obj(word_net_with_selection,
-                           dataset.split('.')[0]
-                           + '_reduced_' + str(tf_idf_top_percent) + '_' + str(doc_count_top_percent)
-                           + ('intersection' if is_intersection else '_non_intersection'))
-        return word_net_with_selection
+    # if len(word_net_with_selection.nodes) == 0 or len(word_net_with_selection.edges) == 0:
+    #     print('    Empty net, skip\n')
+    #     catd.util.save_obj(word_net_with_selection,
+    #                        dataset.split('.')[0]
+    #                        + '_reduced_' + str(tf_idf_top_percent) + '_' + str(doc_count_top_percent)
+    #                        + ('intersection' if is_intersection else '_non_intersection'))
+    #     return word_net_with_selection
+    #
+    # word_net_with_selection.train_lda_model()
+    # word_net_with_selection.generate_topics_from_lda_model()
+    # catd.util.save_obj(word_net_with_selection,
+    #                    dataset.split('.')[0]
+    #                    + '_reduced_' + str(tf_idf_top_percent) + '_' + str(doc_count_top_percent)
+    #                    + ('intersection' if is_intersection else '_non_intersection'))
 
-    word_net_with_selection.train_lda_model()
-    word_net_with_selection.generate_topics_from_lda_model()
     catd.util.save_obj(word_net_with_selection,
                        dataset.split('.')[0]
                        + '_reduced_' + str(tf_idf_top_percent) + '_' + str(doc_count_top_percent)
-                       + ('intersection' if is_intersection else '_non_intersection'))
+                       + ('_intersection' if is_intersection else '_non_intersection'))
     return word_net_with_selection
 
 
@@ -75,22 +79,22 @@ def main():
     # original_word_net = catd.util.load_obj('original_weibo_COVID19')
     print(original_word_net.description())
 
-    for tf_idf_top_percent in (i / 1000 for i in range(100, 500, 50)):
-        for doc_count_top_percent in (i / 1000 for i in range(1, 300, 50)):
-            for is_intersection in (True, False):
-                print('[Reduce original word_net] '
-                      '\n\ttf_idf_top_percent = {}, '
-                      '\n\tdoc_count_top_percent = {}, '
-                      '\n\tis_intersection = {}'
-                      .format(tf_idf_top_percent, doc_count_top_percent, is_intersection))
-                reduced_word_net = reduce_word_net(original_word_net,
-                                                   dataset,
-                                                   corpus_with_time,
-                                                   stop_words_set,
-                                                   tf_idf_top_percent,
-                                                   doc_count_top_percent,
-                                                   is_intersection)
-                print(reduced_word_net.description())
+    is_intersection = True
+    for tf_idf_top_percent in (i / 100 for i in range(0, 30, 3)):
+        for doc_count_top_percent in (i / 1000 for i in range(0, 50, 5)):
+            print('[Reduce original word_net] '
+                  '\n\ttf_idf_top_percent = {}, '
+                  '\n\tdoc_count_top_percent = {}, '
+                  '\n\tis_intersection = {}'
+                  .format(tf_idf_top_percent, doc_count_top_percent, is_intersection))
+            reduced_word_net = reduce_word_net(original_word_net,
+                                               dataset,
+                                               corpus_with_time,
+                                               stop_words_set,
+                                               tf_idf_top_percent,
+                                               doc_count_top_percent,
+                                               is_intersection)
+            print(reduced_word_net.description())
 
 
 if __name__ == '__main__':
