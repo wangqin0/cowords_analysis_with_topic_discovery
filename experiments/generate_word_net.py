@@ -1,14 +1,11 @@
-import re
 import catd
 import os
-import sqlite3
 
 tf_idf_top_percent = 0.2
 doc_count_top_percent = 0.005
 
 dataset = 'weibo_COVID19.db'
-corpus_with_time = catd.util.read_sql_database_input(dataset)
-
+corpus_with_time = catd.util.get_sql_database_input(dataset)
 
 stop_words_set = catd.util.collect_all_words_to_set_from_dir(os.path.join('data', 'stop_words'))
 
@@ -42,8 +39,7 @@ word_net_with_selection.generate_topics_from_lda_model()
 
 # vis
 word_net_with_selection.generate_topic_graph()
-word_net_with_selection.topic_time_statistics_aggregated_visualization()
+word_net_with_selection.vis_topic_time_statistics_aggregated()
 # word_net_with_selection.show_word_cloud()
 
 catd.util.save_obj(word_net_with_selection, 'reduced_' + dataset.split('.')[0])
-print()

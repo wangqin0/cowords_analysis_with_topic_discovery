@@ -8,7 +8,7 @@ from selenium import webdriver
 
 # open weibo.cn
 driver = webdriver.Chrome()
-# driver.maximize_window()
+
 driver.get("https://weibo.cn/")
 driver.find_element_by_xpath('/html/body/div[2]/div/a[1]').click()
 
@@ -24,8 +24,8 @@ driver.find_elements_by_id('loginAction')[0].click()
 time.sleep(10)
 
 # set date iteration
-start_date = datetime.date(2020, 1, 6)
-end_date = datetime.date(2020, 5, 19)
+start_date = datetime.date(2020, 1, 18)
+end_date = datetime.date(2020, 5, 22)
 delta = datetime.timedelta(days=1)
 
 # setup database connection

@@ -5,9 +5,12 @@ import sys
 import os
 from pathlib import Path
 import urllib.request
+import datetime
 import logging
 from gensim import matutils
-
+from matplotlib.font_manager import FontProperties
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 
 logging.getLogger().setLevel(logging.INFO)
 
@@ -39,10 +42,11 @@ def load_obj(name):
 
 def display_progress(prompt, curr_progress, total):
     if curr_progress % 100 == 0:
-        progress_percent = curr_progress/total
+        progress_percent = curr_progress / total
         sys.stdout.write('\r')
         sys.stdout.write('%s [%s%s]%3.1f%s' % (
-            prompt, '█' * int(progress_percent * 50), ' ' * int(50 - int(progress_percent * 50)), progress_percent * 100, '%'))
+            prompt, '█' * int(progress_percent * 50), ' ' * int(50 - int(progress_percent * 50)),
+            progress_percent * 100, '%'))
     elif curr_progress == total:
         sys.stdout.write('\r')
         sys.stdout.write('%s [%s]100%s\n' % (prompt, '█' * 50, '%'))
@@ -145,7 +149,7 @@ def read_txt_input(dataset_filename):
     return corpus
 
 
-def read_sql_database_input(database_filename):
+def get_sql_database_input(database_filename):
     remove_hashtag = re.compile(r'#[\w-]+#')
     con = sqlite3.connect(os.path.join('data', 'original_data', database_filename))
     cursor = con.cursor()
@@ -153,3 +157,48 @@ def read_sql_database_input(database_filename):
     rows = cursor.fetchall()
     corpus = [(remove_hashtag.sub(' ', str(post_content)), post_time) for post_content, post_time in rows]
     return corpus
+
+
+def draw_post_num_time_stats(database_filename):
+    con = sqlite3.connect(os.path.join('data', 'original_data', database_filename))
+    cursor = con.cursor()
+    cursor.execute("SELECT post_time, COUNT(1) AS post_num FROM posts GROUP BY post_time")
+    rows = cursor.fetchall()
+
+    x = [datetime.datetime.strptime(row[0], '%Y%m%d').date() for row in rows]
+    y = [row[1] for row in rows]
+
+    fig, ax = plt.subplots()
+
+    # configure x_axis for date
+    chinese_font = FontProperties(fname=os.path.join('data', 'STHeiti_Medium.ttc'))
+    fig.autofmt_xdate()
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+    ax.xaxis.set_major_locator(mdates.WeekdayLocator())
+
+    plt.xlabel('日期', fontproperties=chinese_font)
+    plt.ylabel('收集微博数（条）', fontproperties=chinese_font)
+    plt.title('每日收集微博数量', fontproperties=chinese_font)
+    ax.grid()
+
+    # Plot
+    ax.plot(x, y)
+    plt.show()
+
+
+def assign_color_to_group(nums):
+    color_set = {-1: 'tab:gray',
+                 0: 'tab:blue',
+                 1: 'tab:orange',
+                 2: 'tab:green',
+                 3: 'tab:red',
+                 4: 'tab:purple',
+                 5: 'tab:brown',
+                 6: 'tab:pink',
+                 7: 'tab:olive',
+                 8: 'tab:cyan',
+                 9: 'lightcoral',
+                 10: 'orangered',
+                 11: 'forestgreen'
+                 }
+    return [color_set[num] for num in nums]

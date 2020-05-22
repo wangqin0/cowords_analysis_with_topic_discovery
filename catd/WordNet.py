@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import datetime
+import heapq
 import re
 import math
 import json
@@ -7,7 +8,6 @@ from gensim.models import LdaModel, CoherenceModel
 from gensim import corpora
 import jieba
 from jieba import posseg
-import pandas as np
 from wordcloud import WordCloud
 
 from .WordNode import WordNode
@@ -492,21 +492,86 @@ class WordNet:
         return coded_corpus
 
     def export_word_net_for_gephi(self):
-        with open(os.path.join('output', 'gephi_nodes.csv'), 'w+', encoding='utf-8') as nodes_file:
+        with open(os.path.join('output', 'word_net_nodes_gephi.csv'), 'w+', encoding='utf-8') as nodes_file:
             nodes_file.write('Id, Label, Group, Doc_count' + '\n')
             for node in self.nodes:
                 nodes_file.write(str(node.node_id) + ', ' + str(node.word) + ', '
                                  + str(node.group[0] if node.group else -1) + ', ' + str(node.doc_count) + '\n')
 
-        with open(os.path.join('output', 'gephi_edges.csv'), 'w+', encoding='utf-8') as edges_file:
+        with open(os.path.join('output', 'word_net_edges_gephi.csv'), 'w+', encoding='utf-8') as edges_file:
             edges_file.write('Source, Target, Weight\n')
             for source in self.edges.keys():
                 for target in self.edges[source].keys():
                     edges_file.write(str(source) + ', ' + str(target) + ', ' + str(self.edges[source][target]) + '\n')
 
-    def topic_time_statistics_aggregated_visualization(self,
-                                                       start_date=datetime.date(2019, 12, 31),
-                                                       end_date=datetime.date(2020, 4, 21)):
+    def export_topic_net_for_gephi(self):
+        with open(os.path.join('output', 'topic_net_nodes_gephi.csv'), 'w+', encoding='utf-8') as nodes_file, open(os.path.join('output', 'topic_net_edges_gephi.csv'), 'w+', encoding='utf-8') as edges_file:
+            nodes_file.write('Id, Label, Group, Doc_count' + '\n')
+            edges_file.write('Source, Target, Label, Weight\n')
+            for source_topic_id in range(len(self.topic_edge_matrix)):
+                for target_topic_id in range(len(self.topic_edge_matrix[0])):
+                    value = self.topic_edge_matrix[source_topic_id][target_topic_id]
+                    if source_topic_id == target_topic_id:
+                        nodes_file.write('{id}, Topic_{id}, {id}, {value}\n'.format(id = source_topic_id, value = value))
+                    else:
+                        edges_file.write('{}, {}, {}, {}\n'.format(source_topic_id, target_topic_id, value, value))
+
+    def vis_top_k_words_by_doc_count(self, k=20):
+        word_nodes = heapq.nlargest(k, self.nodes, key=lambda k: k.doc_count)
+        x = range(k)
+        x_name = [word_node.word for word_node in word_nodes]
+        y = [word_node.doc_count for word_node in word_nodes]
+        x_color = assign_color_to_group([word_node.group[0] for word_node in word_nodes])
+
+        fig, ax = plt.subplots()
+
+        # configure x_axis for date
+        chinese_font = FontProperties(fname=os.path.join('data', 'STHeiti_Medium.ttc'))
+        plt.xlabel('词', fontproperties=chinese_font)
+        plt.ylabel('文档频次', fontproperties=chinese_font)
+        plt.title('文档频次前' + str(k) + '词', fontproperties=chinese_font)
+        plt.xticks(x, x_name, fontproperties=chinese_font)
+        plt.grid()
+
+        plt.bar(x, y, color=x_color)
+        plt.show()
+
+    def vis_doc_count_dist(self):
+        y = [word_node.doc_count for word_node in self.nodes]
+
+        chinese_font = FontProperties(fname=os.path.join('data', 'STHeiti_Medium.ttc'))
+        plt.xlabel('数量', fontproperties=chinese_font)
+        plt.ylabel('文档频次', fontproperties=chinese_font)
+        plt.title('文档频次分布', fontproperties=chinese_font)
+
+        plt.hist(y, bins=300)
+        plt.show()
+
+    def vis_word_cloud(self):
+        corpus = self.get_cut_corpus()
+        # Join the different processed titles together.
+        long_string = ''
+        for doc in corpus:
+            for word in doc:
+                long_string += word + ', '
+
+        wordcloud = WordCloud(width=1920, height=1920,
+                              background_color='white',
+                              font_path='data/STHeiti_Medium.ttc',
+                              min_font_size=10, max_font_size=400,
+                              collocations=False).generate(long_string)
+
+        # plot the WordCloud image
+        matplotlib.use('TkAgg')
+        plt.figure(figsize=(8, 8), facecolor=None)
+        plt.imshow(wordcloud)
+        plt.axis("off")
+        plt.tight_layout(pad=0)
+        plt.show()
+
+    def vis_topic_time_statistics_aggregated(self,
+                                             start_date=datetime.date(2019, 12, 31),
+                                             end_date=datetime.date(2020, 4, 21)):
         delta = datetime.timedelta(days=1)
 
         x_axis = []
@@ -539,6 +604,9 @@ class WordNet:
 
         matplotlib.use('TkAgg')
         fig, ax = plt.subplots()
+
+
+
         ax.stackplot(x_axis, extracted_data)
         plt.legend(legend, loc='best')
         # TODO: set auto loc legend
@@ -546,37 +614,3 @@ class WordNet:
         plt.yticks([])
         plt.axis('off')
         plt.show()
-
-    def show_word_cloud(self):
-        corpus = self.get_cut_corpus()
-        # Join the different processed titles together.
-        long_string = ''
-        for doc in corpus:
-            for word in doc:
-                long_string += word + ', '
-
-        wordcloud = WordCloud(width=1920, height=1920,
-                              background_color='white',
-                              font_path='data/STHeiti_Medium.ttc',
-                              min_font_size=10, max_font_size=400,
-                              collocations=False).generate(long_string)
-
-        # plot the WordCloud image
-        matplotlib.use('TkAgg')
-        plt.figure(figsize=(8, 8), facecolor=None)
-        plt.imshow(wordcloud)
-        plt.axis("off")
-        plt.tight_layout(pad=0)
-        plt.show()
-
-    def output_topic_edge_matrix_to_gephi(self):
-        with open(os.path.join('output', 'topic_nodes_gephi.csv'), 'w+', encoding='utf-8') as nodes_file, open(os.path.join('output', 'topic_edges_gephi.csv'), 'w+', encoding='utf-8') as edges_file:
-            nodes_file.write('Id, Label, Group, Doc_count' + '\n')
-            edges_file.write('Source, Target, Label, Weight\n')
-            for source_topic_id in range(len(self.topic_edge_matrix)):
-                for target_topic_id in range(len(self.topic_edge_matrix[0])):
-                    value = self.topic_edge_matrix[source_topic_id][target_topic_id]
-                    if source_topic_id == target_topic_id:
-                        nodes_file.write('{id}, Topic_{id}, {id}, {value}\n'.format(id = source_topic_id, value = value))
-                    else:
-                        edges_file.write('{}, {}, {}, {}\n'.format(source_topic_id, target_topic_id, value, value))
