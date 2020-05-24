@@ -15,6 +15,7 @@ from .Doc import Doc
 from .util import *
 from .Topic import Topic
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 import matplotlib
 
 
@@ -411,7 +412,7 @@ class WordNet:
         for doc in self.docs:
             sorted_list = sorted(doc.word_id_tf_idf, key=lambda j: doc.word_id_tf_idf[j], reverse=True)
             extracted_sorted_list = sorted_list[0:int(len(sorted_list) * percent)]
-            if len(extracted_sorted_list) < 2 and len(sorted_list) > 2:
+            if len(extracted_sorted_list) < 2 and len(sorted_list) > 4:
                 extracted_sorted_list = sorted_list[:1]
             extracted_words_id_set.update(set(extracted_sorted_list))
 
@@ -521,7 +522,27 @@ class WordNet:
         x = range(k)
         x_name = [word_node.word for word_node in word_nodes]
         y = [word_node.doc_count for word_node in word_nodes]
-        x_color = assign_color_to_group([word_node.group[0] for word_node in word_nodes])
+
+        color_set = {-1: (207/256, 207/256, 207/256),
+                     0: (240/256, 206/256, 107/256),
+                     1: (252/256, 191/256, 237/256),
+                     2: (144/256, 227/256, 162/256),
+                     3: (144/256, 220/256, 240/256),
+                     4: (255/256, 176/256, 169/256),
+                     5: (240/256, 206/256, 107/256),
+                     6: 'tab:blue',
+                     7: 'tab:olive',
+                     8: 'tab:cyan',
+                     9: 'lightcoral',
+                     10: 'orangered',
+                     11: 'forestgreen'
+                     }
+
+        x_color = [color_set[word_node.group[0]] for word_node in word_nodes]
+
+        labels = set()
+        for word_node in word_nodes:
+            labels.add(word_node.group[0])
 
         fig, ax = plt.subplots()
 
@@ -529,9 +550,10 @@ class WordNet:
         chinese_font = FontProperties(fname=os.path.join('data', 'STHeiti_Medium.ttc'))
         plt.xlabel('词', fontproperties=chinese_font)
         plt.ylabel('文档频次', fontproperties=chinese_font)
-        plt.title('文档频次前' + str(k) + '词', fontproperties=chinese_font)
         plt.xticks(x, x_name, fontproperties=chinese_font)
-        plt.grid()
+
+        patches = [mpatches.Patch(color=color_set[i], label="Topic {}".format(i + 1)) for i in range(len(labels))]
+        plt.gca().legend(handles=patches)
 
         plt.bar(x, y, color=x_color)
         plt.show()
@@ -542,7 +564,6 @@ class WordNet:
         chinese_font = FontProperties(fname=os.path.join('data', 'STHeiti_Medium.ttc'))
         plt.xlabel('数量', fontproperties=chinese_font)
         plt.ylabel('文档频次', fontproperties=chinese_font)
-        plt.title('文档频次分布', fontproperties=chinese_font)
 
         plt.hist(y, bins=300)
         plt.show()
@@ -571,7 +592,7 @@ class WordNet:
 
     def vis_topic_time_statistics_aggregated(self,
                                              start_date=datetime.date(2019, 12, 31),
-                                             end_date=datetime.date(2020, 4, 21)):
+                                             end_date=datetime.date(2020, 4, 22)):
         delta = datetime.timedelta(days=1)
 
         x_axis = []
@@ -580,7 +601,7 @@ class WordNet:
         while start_date <= end_date:
             curr_date = start_date.strftime("%Y%m%d")
             start_date += delta
-            x_axis.append(str(curr_date))
+            x_axis.append(datetime.datetime.strptime(curr_date, '%Y%m%d'))
 
             for topic in self.topics:
                 topic_count_on_curr_date = 0
@@ -591,7 +612,7 @@ class WordNet:
 
                 extracted_data[topic.topic_id].append(topic_count_on_curr_date)
 
-        legend = []
+        legend = ['Topic ' + str(i.topic_id) for i in self.topics]
 
         for j in range(len(extracted_data[0])):
             sum = 0
@@ -603,14 +624,22 @@ class WordNet:
                 extracted_data[i][j] /= sum
 
         matplotlib.use('TkAgg')
+
         fig, ax = plt.subplots()
 
+        # configure x_axis for date
+        chinese_font = FontProperties(fname=os.path.join('data', 'STHeiti_Medium.ttc'))
+        fig.autofmt_xdate()
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+        ax.xaxis.set_major_locator(mdates.WeekdayLocator())
 
+        plt.xlabel('日期', fontproperties=chinese_font)
+        plt.ylabel('主题热度', fontproperties=chinese_font)
 
-        ax.stackplot(x_axis, extracted_data)
-        plt.legend(legend, loc='best')
-        # TODO: set auto loc legend
-        plt.xticks([])
-        plt.yticks([])
-        plt.axis('off')
+        for _, data in enumerate(extracted_data):
+            ax.plot(x_axis, data)
+
+        ax.legend(legend, loc='upper right')
+        ax.grid()
+
         plt.show()

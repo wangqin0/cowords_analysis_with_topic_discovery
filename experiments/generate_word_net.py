@@ -2,7 +2,7 @@ import catd
 import os
 
 tf_idf_top_percent = 0.2
-doc_count_top_percent = 0.005
+doc_count_top_percent = 0.003
 
 dataset = 'weibo_COVID19.db'
 corpus_with_time = catd.util.get_sql_database_input(dataset)
@@ -16,6 +16,7 @@ coded_corpus = word_net.generate_nodes_hash_and_edge(cut_corpus_with_time)
 word_net.add_cut_corpus(coded_corpus)
 print(word_net.description())
 catd.util.save_obj(word_net, 'original_' + dataset.split('.')[0])
+word_net = catd.util.load_obj('original_weibo_COVID19')
 
 
 tf_idf_selection = word_net.get_top_percent_words_by_tf_idf_in_each_doc(tf_idf_top_percent)
@@ -36,6 +37,8 @@ print(word_net_with_selection.description())
 # running lda
 word_net_with_selection.train_lda_model()
 word_net_with_selection.generate_topics_from_lda_model()
+
+catd.util.save_obj(word_net_with_selection, 'pre_reduced_' + dataset.split('.')[0])
 
 # vis
 word_net_with_selection.generate_topic_graph()

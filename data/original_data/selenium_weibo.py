@@ -24,7 +24,7 @@ driver.find_elements_by_id('loginAction')[0].click()
 time.sleep(10)
 
 # set date iteration
-start_date = datetime.date(2020, 1, 18)
+start_date = datetime.date(2020, 5, 20)
 end_date = datetime.date(2020, 5, 22)
 delta = datetime.timedelta(days=1)
 

@@ -159,7 +159,7 @@ def get_sql_database_input(database_filename):
     return corpus
 
 
-def draw_post_num_time_stats(database_filename):
+def vis_post_num_time_stats(database_filename):
     con = sqlite3.connect(os.path.join('data', 'original_data', database_filename))
     cursor = con.cursor()
     cursor.execute("SELECT post_time, COUNT(1) AS post_num FROM posts GROUP BY post_time")
@@ -178,27 +178,9 @@ def draw_post_num_time_stats(database_filename):
 
     plt.xlabel('日期', fontproperties=chinese_font)
     plt.ylabel('收集微博数（条）', fontproperties=chinese_font)
-    plt.title('每日收集微博数量', fontproperties=chinese_font)
+
     ax.grid()
 
     # Plot
     ax.plot(x, y)
     plt.show()
-
-
-def assign_color_to_group(nums):
-    color_set = {-1: 'tab:gray',
-                 0: 'tab:blue',
-                 1: 'tab:orange',
-                 2: 'tab:green',
-                 3: 'tab:red',
-                 4: 'tab:purple',
-                 5: 'tab:brown',
-                 6: 'tab:pink',
-                 7: 'tab:olive',
-                 8: 'tab:cyan',
-                 9: 'lightcoral',
-                 10: 'orangered',
-                 11: 'forestgreen'
-                 }
-    return [color_set[num] for num in nums]

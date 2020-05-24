@@ -1,6 +1,6 @@
 import catd
 
-word_net = catd.util.load_obj('testset_weibo_COVID19')
+word_net = catd.util.load_obj('weibo_COVID19_reduced_0.27_0.02_intersection')
 # word_net = catd.WordNet()
 
-word_net.vis_topic_time_statistics_aggregated()
+print(word_net.description())

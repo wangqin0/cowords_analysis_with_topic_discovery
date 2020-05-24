@@ -81,7 +81,7 @@ def main():
 
     is_intersection = True
     for tf_idf_top_percent in (i / 100 for i in range(0, 30, 3)):
-        for doc_count_top_percent in (i / 1000 for i in range(0, 50, 5)):
+        for doc_count_top_percent in (i / 1000 for i in range(0, 20, 2)):
             print('[Reduce original word_net] '
                   '\n\ttf_idf_top_percent = {}, '
                   '\n\tdoc_count_top_percent = {}, '
