@@ -10,8 +10,8 @@ if __name__ == '__main__':
 
     # word_net.vis_word_cloud()
     # word_net.vis_doc_count_dist()
-    word_net.vis_top_k_words_by_doc_count()
+    # word_net.vis_top_k_words_by_doc_count()
     # word_net.vis_topic_time_statistics_aggregated()
 
-    # word_net.export_word_net_for_gephi()
-    # word_net.export_topic_net_for_gephi()
+    word_net.export_word_net_for_gephi()
+    word_net.export_topic_net_for_gephi()

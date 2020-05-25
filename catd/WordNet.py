@@ -257,7 +257,7 @@ class WordNet:
             bow.append(doc_bow)
         return bow
 
-    def train_lda_model(self, num_topics=6, chunksize=100000, passes=20, iterations=400, eval_every=1):
+    def train_lda_model(self, num_topics=9, chunksize=100000, passes=20, iterations=400, eval_every=1):
         id2word = self.generate_id_to_word()
         corpus = self.generate_docs_to_bag_of_words()
 
@@ -315,7 +315,6 @@ class WordNet:
         plt.plot(x, coherence_values)
         plt.xlabel("Num Topics")
         plt.ylabel("Coherence score")
-        plt.legend("coherence_values", loc='best')
         plt.show()
         return range(num_topics_start, num_topics_stop, num_topics_step), coherence_values
 
@@ -513,7 +512,7 @@ class WordNet:
                 for target_topic_id in range(len(self.topic_edge_matrix[0])):
                     value = self.topic_edge_matrix[source_topic_id][target_topic_id]
                     if source_topic_id == target_topic_id:
-                        nodes_file.write('{id}, Topic_{id}, {id}, {value}\n'.format(id = source_topic_id, value = value))
+                        nodes_file.write('{id}, Topic {index}, {id}, {value}\n'.format(id = source_topic_id, value = value, index = source_topic_id + 1))
                     else:
                         edges_file.write('{}, {}, {}, {}\n'.format(source_topic_id, target_topic_id, value, value))
 
@@ -523,26 +522,9 @@ class WordNet:
         x_name = [word_node.word for word_node in word_nodes]
         y = [word_node.doc_count for word_node in word_nodes]
 
-        color_set = {-1: (207/256, 207/256, 207/256),
-                     0: '#60acfc',
-                     1: '#32d3eb',
-                     2: '#5bc49f',
-                     3: '#feb64d',
-                     4: '#ff7c7c',
-                     5: '#9287e7',
-                     6: 'tab:blue',
-                     7: 'tab:olive',
-                     8: 'tab:cyan',
-                     9: 'lightcoral',
-                     10: 'orangered',
-                     11: 'forestgreen'
-                     }
+        x_color = [color_set(word_node.group[0]) for word_node in word_nodes]
 
-        x_color = [color_set[word_node.group[0]] for word_node in word_nodes]
-
-        labels = set()
-        for word_node in word_nodes:
-            labels.add(word_node.group[0])
+        labels = [color_set(i) for i in range(len(self.topics))]
 
         fig, ax = plt.subplots()
 
@@ -552,7 +534,7 @@ class WordNet:
         plt.ylabel('文档频次', fontproperties=chinese_font)
         plt.xticks(x, x_name, fontproperties=chinese_font)
 
-        patches = [mpatches.Patch(color=color_set[i], label="Topic {}".format(i + 1)) for i in range(len(labels))]
+        patches = [mpatches.Patch(color=color_set(i), label="Topic {}".format(i + 1)) for i in range(len(labels))]
         plt.gca().legend(handles=patches)
 
         plt.bar(x, y, color=x_color)
@@ -612,7 +594,8 @@ class WordNet:
 
                 extracted_data[topic.topic_id].append(topic_count_on_curr_date)
 
-        legend = ['Topic ' + str(i.topic_id) for i in self.topics]
+        legend = ['Topic ' + str(i.topic_id + 1) for i in self.topics]
+        topic_color = [color_set(i) for i in range(len(self.topics))]
 
         for j in range(len(extracted_data[0])):
             sum = 0
@@ -624,7 +607,6 @@ class WordNet:
                 extracted_data[i][j] /= sum
 
         matplotlib.use('TkAgg')
-
         fig, ax = plt.subplots()
 
         # configure x_axis for date
@@ -636,10 +618,7 @@ class WordNet:
         plt.xlabel('日期', fontproperties=chinese_font)
         plt.ylabel('主题热度', fontproperties=chinese_font)
 
-        for _, data in enumerate(extracted_data):
-            ax.plot(x_axis, data)
-
+        ax.stackplot(x_axis, extracted_data, colors=topic_color)
         ax.legend(legend, loc='upper right')
-        ax.grid()
 
         plt.show()
