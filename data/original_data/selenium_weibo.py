@@ -2,7 +2,6 @@ import os
 import time
 import datetime
 from random import random
-
 import sqlite3
 from selenium import webdriver
 

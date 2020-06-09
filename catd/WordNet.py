@@ -18,6 +18,9 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import matplotlib
 
+plt.rcParams['figure.dpi'] = 140
+matplotlib.use('TkAgg')
+
 
 class WordNet:
     def __init__(self):
@@ -311,7 +314,7 @@ class WordNet:
         for index, cv in zip(x, coherence_values):
             print("Num Topics =", index, " has Coherence Value of", round(cv, 4))
 
-        matplotlib.use('TkAgg')
+
         plt.plot(x, coherence_values)
         plt.xlabel("Num Topics")
         plt.ylabel("Coherence score")
@@ -379,26 +382,42 @@ class WordNet:
         words_intersection = [[[] for x in num_topic] for y in num_topic]
         for topic in self.topics:
             words_intersection[topic.topic_id][topic.topic_id] = set(word for word, contribution in topic.feature_words)
-        for x in num_topic:
-            for y in num_topic:
-                if x == y:
+        for source_topic in num_topic:
+            for target_topic in num_topic:
+                if source_topic == target_topic:
                     continue
                 else:
-                    words_intersection[x][y] = words_intersection[x][x].intersection(words_intersection[y][y])
+                    words_intersection[source_topic][target_topic] = words_intersection[source_topic][source_topic].intersection(words_intersection[target_topic][target_topic])
         topic_edge = [[[] for x in num_topic] for y in num_topic]
-        for x in num_topic:
-            for y in num_topic:
-                if x == y:
-                    topic_edge[x][y] = self.topics[x].doc_count_weighted
+
+        contributions = []
+        for topic_id, topic in enumerate(self.topics):
+            contribution_dict = {}
+            for word, contribution in topic.feature_words:
+                contribution_dict[word] = contribution
+            contributions.append(contribution_dict)
+
+        for source_topic in num_topic: # Source
+            for target_topic in num_topic:     # Target
+                if source_topic == target_topic:
+                    topic_edge[source_topic][target_topic] = self.topics[source_topic].doc_count_weighted
                 else:
-                    shared_feature_words = words_intersection[x][y]
-                    target_heat = 0
-                    for word, contribution in self.topics[y].feature_words:
-                        if word in shared_feature_words:
-                            target_heat += self.get_node_by_str[word].doc_count * contribution
-                    topic_edge[x][y] = target_heat / self.topics[x].doc_count_weighted
+                    shared_feature_words = words_intersection[source_topic][target_topic]
+                    sum_by_source = 0
+                    sum_by_target = 0
+                    for word in shared_feature_words:
+                        sum_by_source += contributions[source_topic][word]
+                        sum_by_target += contributions[target_topic][word]
+                    topic_edge[source_topic][target_topic] = sum_by_target / (sum_by_source + sum_by_target)
         self.topic_feature_words_intersection = words_intersection
         self.topic_edge_matrix = topic_edge
+
+    def print_topic_edges(self):
+        max_edge = max([max(edges) for edges in self.topic_edge_matrix])
+        for edges in self.topic_edge_matrix:
+            for edge in edges:
+                print(str(edge)[:7] + ', ', end='')
+            print()
 
     def get_topics(self):
         if self.topics:
@@ -430,7 +449,7 @@ class WordNet:
 
         return extracted_words_set
 
-    def get_top_words_in_each_topics(self, topK=None):
+    def get_top_words_set_in_each_topics(self, topK=None):
         if self.topics:
             if topK:
                 lda_selected_words_set = set()
@@ -452,6 +471,13 @@ class WordNet:
                 return lda_selected_words_set
         else:
             print('[get_topics] lda model not created.')
+
+    def top_k_words_by_doc_count_in_each_topic(self, k=50):
+        topics = []
+        for topic_id, words in get_topic_with_words(self.lda_model):
+            assert len(topics) == topic_id
+            topics.append(words[:k])
+        return topics
 
     def word_to_id(self, word):
         return self.get_node_by_str[word].node_id
@@ -514,7 +540,7 @@ class WordNet:
                     if source_topic_id == target_topic_id:
                         nodes_file.write('{id}, Topic {index}, {id}, {value}\n'.format(id = source_topic_id, value = value, index = source_topic_id + 1))
                     else:
-                        edges_file.write('{}, {}, {}, {}\n'.format(source_topic_id, target_topic_id, value, value))
+                        edges_file.write('{}, {}, {}, {}\n'.format(source_topic_id, target_topic_id, value, value * 100))
 
     def vis_top_k_words_by_doc_count(self, k=20):
         word_nodes = heapq.nlargest(k, self.nodes, key=lambda k: k.doc_count)
@@ -551,6 +577,7 @@ class WordNet:
         plt.show()
 
     def vis_word_cloud(self):
+        plt.rcParams['figure.dpi'] = 100
         corpus = self.get_cut_corpus()
         # Join the different processed titles together.
         long_string = ''
@@ -565,7 +592,6 @@ class WordNet:
                               collocations=False).generate(long_string)
 
         # plot the WordCloud image
-        matplotlib.use('TkAgg')
         plt.figure(figsize=(8, 8), facecolor=None)
         plt.imshow(wordcloud)
         plt.axis("off")
@@ -606,7 +632,6 @@ class WordNet:
             for i in range(len(extracted_data)):
                 extracted_data[i][j] /= sum
 
-        matplotlib.use('TkAgg')
         fig, ax = plt.subplots()
 
         # configure x_axis for date
@@ -621,4 +646,21 @@ class WordNet:
         ax.stackplot(x_axis, extracted_data, colors=topic_color)
         ax.legend(legend, loc='upper right')
 
+        plt.show()
+
+    def vis_word_contribution(self):
+        topic_color = [color_set(i) for i in range(len(self.topics))]
+
+        len_topics = [len(topic.words) for topic in self.topics]
+        x = range(max(len_topics))
+
+        for topic_id, topic in enumerate(self.topics):
+            topic_data = [contribution * 100 for word, contribution in topic.words]
+            plt.plot(x, topic_data, color=topic_color[topic_id], label='Topic ' + str(topic_id + 1))
+
+        chinese_font = FontProperties(fname=os.path.join('data', 'STHeiti_Medium.ttc'))
+        plt.xlabel('词贡献率降序排名（取对数）', fontproperties=chinese_font)
+        plt.ylabel('词贡献率 (%)', fontproperties=chinese_font)
+        plt.legend(loc='best')
+        plt.xscale('log')
         plt.show()
