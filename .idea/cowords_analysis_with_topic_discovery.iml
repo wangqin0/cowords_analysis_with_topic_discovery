@@ -2,7 +2,7 @@
 <module type="PYTHON_MODULE" version="4">
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$" />
-    <orderEntry type="jdk" jdkName="Python 3.8 (dft)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Pipenv (cowords_analysis_with_topic_discovery)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="d3.v4" level="application" />
   </component>
