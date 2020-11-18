@@ -16,7 +16,8 @@ coded_corpus = word_net.generate_nodes_hash_and_edge(cut_corpus_with_time)
 word_net.add_cut_corpus(coded_corpus)
 print(word_net.description())
 catd.util.save_obj(word_net, 'original_' + dataset.split('.')[0])
-word_net = catd.util.load_obj('original_weibo_COVID19')
+
+# word_net = catd.util.load_obj('original_weibo_COVID19')
 
 
 tf_idf_selection = word_net.get_top_percent_words_by_tf_idf_in_each_doc(tf_idf_top_percent)

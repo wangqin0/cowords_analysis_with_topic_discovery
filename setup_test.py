@@ -5,17 +5,19 @@ import os
 
 catd.util.set_up_current_dir_as_working_dir()
 
-corpus = []
-with open(os.path.join('data', 'original_data', 'tianya_posts_test_set_100.txt'), encoding='utf-8') as f:
-    for line in f:
-        corpus.append(line)
+dataset = 'test_weibo_COVID19.db'
+corpus_with_time = catd.util.get_sql_database_input(dataset)
 
 stop_words_set = catd.util.collect_all_words_to_set_from_dir(os.path.join('data', 'stop_words'))
 
-cut_corpus = catd.util.word_cut(corpus, stop_words_set)
-
 word_net = catd.WordNet()
-coded_corpus = word_net.generate_nodes_hash_and_edge(cut_corpus)
+
+cut_corpus_with_time = word_net.word_cut(corpus_with_time, stop_words_set)
+coded_corpus = word_net.generate_nodes_hash_and_edge(cut_corpus_with_time)
 word_net.add_cut_corpus(coded_corpus)
-word_net.output_d3_force_graph_json()
-catd.util.save_obj(word_net, 'word_net')
+
+print(word_net.description())
+
+# break point here to see what's inside
+catd.util.save_obj(word_net, 'original_' + dataset.split('.')[0])
+

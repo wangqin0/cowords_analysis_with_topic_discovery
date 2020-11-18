@@ -25,8 +25,8 @@ def set_up_current_dir_as_working_dir(download_test_set=True):
     Path(os.path.join('output', 'extracted_words')).mkdir(parents=True, exist_ok=True)
     if download_test_set:
         logging.info('downloading dataset...')
-        data_set_url = 'https://raw.githubusercontent.com/dqwerter/dataset/master/tianya_posts_test_set_100.txt'
-        urllib.request.urlretrieve(data_set_url, os.path.join('data', 'original_data', 'tianya_posts_test_set_100.txt'))
+        data_set_url = 'https://github.com/dqwerter/dataset/raw/master/test_weibo_COVID19.db'
+        urllib.request.urlretrieve(data_set_url, os.path.join('data', 'original_data', 'test_weibo_COVID19.db'))
         logging.info('download complete.')
 
 
