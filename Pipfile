@@ -4,10 +4,10 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-gensim = "*"
-jieba = "*"
-wordcloud = "*"
-matplotlib = "*"
+gensim = "==4.4.0"
+jieba = "==0.42.1"
+wordcloud = "==1.9.4"
+matplotlib = "==3.10.7"
 
 [dev-packages]
 
